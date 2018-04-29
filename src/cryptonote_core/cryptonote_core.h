@@ -63,6 +63,7 @@ namespace cryptonote
   extern const command_line::arg_descriptor<bool, false> arg_regtest_on;
   extern const command_line::arg_descriptor<difficulty_type> arg_fixed_difficulty;
   extern const command_line::arg_descriptor<bool> arg_offline;
+  extern const command_line::arg_descriptor<size_t> arg_block_download_max_size;
 
   /************************************************************************/
   /*                                                                      */
@@ -389,6 +390,13 @@ namespace cryptonote
       * @note see Blockchain::get_transactions
       */
      bool get_transactions(const std::vector<crypto::hash>& txs_ids, std::vector<cryptonote::blobdata>& txs, std::vector<crypto::hash>& missed_txs) const;
+
+     /**
+      * @copydoc Blockchain::get_transactions
+      *
+      * @note see Blockchain::get_transactions
+      */
+     bool get_split_transactions_blobs(const std::vector<crypto::hash>& txs_ids, std::vector<std::tuple<crypto::hash, cryptonote::blobdata, crypto::hash, cryptonote::blobdata>>& txs, std::vector<crypto::hash>& missed_txs) const;
 
      /**
       * @copydoc Blockchain::get_transactions
@@ -821,6 +829,36 @@ namespace cryptonote
       */
      bool offline() const { return m_offline; }
 
+     /**
+      * @brief get the blockchain pruning seed
+      *
+      * @return the blockchain pruning seed
+      */
+     uint32_t get_blockchain_pruning_seed() const;
+
+     /**
+      * @brief prune the blockchain
+      *
+      * @param pruning_seed the seed to use to prune the chain (0 for default, highly recommended)
+      *
+      * @return true iff success
+      */
+     bool prune_blockchain(uint32_t pruning_seed = 0);
+
+     /**
+      * @brief incrementally prunes blockchain
+      *
+      * @return true on success, false otherwise
+      */
+     bool update_blockchain_pruning();
+
+     /**
+      * @brief checks the blockchain pruning if enabled
+      *
+      * @return true on success, false otherwise
+      */
+     bool check_blockchain_pruning();
+
    private:
 
      /**
@@ -1018,6 +1056,7 @@ namespace cryptonote
      epee::math_helper::once_a_time_seconds<30> m_clear_dandelion_embargo_interval; //!< interval for clearing Dandelion embargo
      epee::math_helper::once_a_time_seconds<24 * 60 * 60> m_blocked_keys_clearer; //!< interval for clearing banned miner_specifics
      epee::math_helper::once_a_time_seconds<90, false> m_block_rate_interval; //!< interval for checking block rate
+     epee::math_helper::once_a_time_seconds<60*60*5, true> m_blockchain_pruning_interval; //!< interval for incremental blockchain pruning
 
      std::vector<std::string> m_messages; //!< stores broadcast messages
 

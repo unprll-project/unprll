@@ -250,3 +250,25 @@ set_property(TARGET blockchain_depth
 	PROPERTY
 	OUTPUT_NAME "unprll-blockchain-depth")
 install(TARGETS blockchain_depth DESTINATION bin)
+
+monero_add_executable(blockchain_prune
+  blockchain_prune.cpp
+)
+
+set_property(TARGET blockchain_prune
+	PROPERTY
+	OUTPUT_NAME "unprll-blockchain-prune")
+install(TARGETS blockchain_prune DESTINATION bin)
+
+target_link_libraries(blockchain_prune
+  PRIVATE
+    cryptonote_core
+    blockchain_db
+    p2p
+    version
+    epee
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
+    ${Boost_THREAD_LIBRARY}
+    ${CMAKE_THREAD_LIBS_INIT}
+    ${EXTRA_LIBRARIES})

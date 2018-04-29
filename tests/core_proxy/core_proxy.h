@@ -107,5 +107,8 @@ namespace tests
     bool show_broadcast_message(std::string message);
     bool clear_broadcast_messages();
     uint64_t prevalidate_block_hashes(uint64_t height, const std::vector<crypto::hash> &hashes) { return 0; }
+    bool pad_transactions() const { return false; }
+    uint32_t get_blockchain_pruning_seed() const { return 0; }
+    bool prune_blockchain(uint32_t pruning_seed) const { return true; }
   };
 }

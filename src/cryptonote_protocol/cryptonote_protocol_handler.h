@@ -45,6 +45,7 @@
 #include "cryptonote_protocol_defs.h"
 #include "cryptonote_protocol_handler_common.h"
 #include "block_queue.h"
+#include "common/perf_timer.h"
 #include "cryptonote_basic/connection_context.h"
 #include "cryptonote_basic/cryptonote_stat_info.h"
 #include <boost/circular_buffer.hpp>
@@ -113,6 +114,10 @@ namespace cryptonote
     const block_queue &get_block_queue() const { return m_block_queue; }
     void stop();
     void on_connection_close(cryptonote_connection_context &context);
+    void set_max_out_peers(unsigned int max) { m_max_out_peers = max; }
+    std::string get_peers_overview() const;
+    std::pair<uint32_t, uint32_t> get_next_needed_pruning_stripe() const;
+    bool needs_new_sync_connections() const;
   private:
     //----------------- commands handlers ----------------------------------------------
     int handle_notify_new_block(int command, NOTIFY_NEW_BLOCK::request& arg, cryptonote_connection_context& context);
@@ -134,10 +139,11 @@ namespace cryptonote
 		virtual void set_rate_limit(uint16_t rate_limit);
     //----------------------------------------------------------------------------------
     //bool get_payload_sync_data(HANDSHAKE_DATA::request& hshd, cryptonote_connection_context& context);
+    bool should_drop_connection(cryptonote_connection_context& context, uint32_t next_stripe);
     bool request_missing_objects(cryptonote_connection_context& context, bool check_having_blocks, bool force_next_span = false);
     size_t get_synchronizing_connections_count();
     bool on_connection_synchronized();
-    bool should_download_next_span(cryptonote_connection_context& context) const;
+    bool should_download_next_span(cryptonote_connection_context& context, bool standby);
     void drop_connection(cryptonote_connection_context &context, bool add_fail, bool flush_all_spans);
     bool kick_idle_peers();
     bool select_dandelion_stem();
@@ -146,6 +152,8 @@ namespace cryptonote
 		bool check_request_rate(cryptonote_connection_context &context);
 		bool check_standby_peers();
     int try_add_next_blocks(cryptonote_connection_context &context);
+    void notify_new_stripe(cryptonote_connection_context &context, uint32_t stripe);
+    void skip_unneeded_hashes(cryptonote_connection_context& context, bool check_block_queue) const;
 
     t_core& m_core;
 
@@ -161,6 +169,7 @@ namespace cryptonote
     epee::math_helper::once_a_time_seconds<600> m_dandelion_stem_selector;
 		epee::math_helper::once_a_time_seconds<24 * 60 * 60> m_invalid_blocks_resetter;
 		epee::math_helper::once_a_time_milliseconds<100> m_standby_checker;
+		std::atomic<unsigned int> m_max_out_peers;
     boost::uuids::uuid m_dandelion_peer;
 		uint16_t m_rate_limit;
 		std::unordered_map<std::string, uint8_t> m_rate_counter;

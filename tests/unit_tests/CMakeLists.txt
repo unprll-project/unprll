@@ -62,6 +62,7 @@ set(unit_tests_sources
   multisig.cpp
   output_distribution.cpp
   parse_amount.cpp
+  pruning.cpp
   random.cpp
   serialization.cpp
   sha256.cpp
