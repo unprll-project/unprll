@@ -34,53 +34,18 @@
 #include "blockchain_db/blockchain_db.h"
 #include "cryptonote_basic/cryptonote_format_utils.h"
 #include "cryptonote_basic/hardfork.h"
+#include "testdb.h"
 
 using namespace cryptonote;
 
 #define BLOCKS_PER_YEAR 525960
 #define SECONDS_PER_YEAR 31557600
 
+namespace
+{
 
-class TestDB: public BlockchainDB {
+class TestDB: public BaseTestDB {
 public:
-  TestDB() {};
-  virtual void open(const std::string& filename, const int db_flags = 0) { }
-  virtual void close() {}
-  virtual void sync() {}
-  virtual void safesyncmode(const bool onoff) {}
-  virtual void reset() {}
-  virtual std::vector<std::string> get_filenames() const { return std::vector<std::string>(); }
-  virtual bool remove_data_file(const std::string& folder) const { return true; }
-  virtual std::string get_db_name() const { return std::string(); }
-  virtual bool lock() { return true; }
-  virtual void unlock() { }
-  virtual bool batch_start(uint64_t batch_num_blocks=0, uint64_t batch_bytes=0) { return true; }
-  virtual void batch_stop() {}
-  virtual void set_batch_transactions(bool) {}
-  virtual void block_txn_start(bool readonly=false) {}
-  virtual void block_txn_stop() {}
-  virtual void block_txn_abort() {}
-  virtual void drop_hard_fork_info() {}
-  virtual bool block_exists(const crypto::hash& h, uint64_t *height) const { return false; }
-  virtual blobdata get_block_blob_from_height(const uint64_t& height) const { return cryptonote::t_serializable_object_to_blob(get_block_from_height(height)); }
-  virtual blobdata get_block_blob(const crypto::hash& h) const { return blobdata(); }
-  virtual bool get_tx_blob(const crypto::hash& h, cryptonote::blobdata &tx) const { return false; }
-  virtual bool get_pruned_tx_blob(const crypto::hash& h, cryptonote::blobdata &tx) const { return false; }
-  virtual bool get_prunable_tx_hash(const crypto::hash& tx_hash, crypto::hash &prunable_hash) const { return false; }
-  virtual uint64_t get_block_height(const crypto::hash& h) const { return 0; }
-  virtual block_header get_block_header(const crypto::hash& h) const { return block_header(); }
-  virtual uint64_t get_block_timestamp(const uint64_t& height) const { return 0; }
-  virtual std::vector<uint64_t> get_block_cumulative_rct_outputs(const std::vector<uint64_t> &heights) const { return {}; }
-  virtual uint64_t get_top_block_timestamp() const { return 0; }
-  virtual size_t get_block_weight(const uint64_t& height) const { return 128; }
-  virtual difficulty_type get_block_cumulative_difficulty(const uint64_t& height) const { return 10; }
-  virtual difficulty_type get_block_difficulty(const uint64_t& height) const { return 0; }
-  virtual uint64_t get_block_already_generated_coins(const uint64_t& height) const { return 10000000000; }
-  virtual crypto::hash get_block_hash_from_height(const uint64_t& height) const { return crypto::hash(); }
-  virtual std::vector<block> get_blocks_range(const uint64_t& h1, const uint64_t& h2) const { return std::vector<block>(); }
-  virtual std::vector<crypto::hash> get_hashes_range(const uint64_t& h1, const uint64_t& h2) const { return std::vector<crypto::hash>(); }
-  virtual crypto::hash top_block_hash() const { return crypto::hash(); }
-  virtual block get_top_block() const { return block(); }
   virtual uint64_t height() const { return blocks.size(); }
   virtual bool tx_exists(const crypto::hash& h) const { return false; }
   virtual bool tx_exists(const crypto::hash& h, uint64_t& tx_index) const { return false; }
@@ -138,6 +103,7 @@ public:
                         ) {
     blocks.push_back(blk);
   }
+  virtual void remove_block() { blocks.pop_back(); }
   virtual block get_block_from_height(const uint64_t& height) const {
     return blocks.at(height);
   }
@@ -149,12 +115,13 @@ public:
   virtual uint8_t get_hard_fork_version(uint64_t height) const {
     return versions.at(height);
   }
-  virtual void check_hard_fork_info() {}
 
 private:
   std::vector<block> blocks;
   std::deque<uint8_t> versions;
 };
+
+}
 
 static cryptonote::block mkblock(uint8_t version, uint8_t vote)
 {
