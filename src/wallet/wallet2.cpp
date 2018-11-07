@@ -7078,6 +7078,7 @@ void wallet2::get_outs(std::vector<std::vector<tools::wallet2::get_outs_entry>> 
       LOG_PRINT_L1("asking for output " << i.index << " for " << print_money(i.amount));
 
     // get the keys for those
+    req.get_txid = false;
     m_daemon_rpc_mutex.lock();
     bool r = epee::net_utils::invoke_http_bin("/get_outs.bin", req, daemon_resp, m_http_client, rpc_timeout);
     m_daemon_rpc_mutex.unlock();

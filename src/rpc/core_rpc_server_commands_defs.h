@@ -734,9 +734,11 @@ namespace cryptonote
     struct request
     {
       std::vector<get_outputs_out> outputs;
+      bool get_txid;
 
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(outputs)
+        KV_SERIALIZE_OPT(get_txid, true)
       END_KV_SERIALIZE_MAP()
     };
 
