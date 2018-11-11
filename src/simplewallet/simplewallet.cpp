@@ -3421,6 +3421,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
       fail_msg_writer() << tr("can't specify --subaddress-lookahead and --wallet-file at the same time");
       return false;
     }
+    message_writer() << "\n" << tr("Loading your wallet, this could take a while");
     bool r = open_wallet(vm);
     CHECK_AND_ASSERT_MES(r, false, tr("failed to open account"));
   }
@@ -3611,6 +3612,8 @@ boost::optional<epee::wipeable_string> simple_wallet::new_wallet(const boost::pr
   }
 
   m_wallet->set_seed_language(mnemonic_language);
+
+  message_writer(console_color_white, false) << "\n" << tr("Loading your wallet, this could take a while");
 
   bool create_address_file = command_line::get_arg(vm, arg_create_address_file);
 
@@ -3997,7 +4000,10 @@ bool simple_wallet::start_mining(const std::vector<std::string>& args)
     << std::endl
     << tr("1) Never use your Mining account address for receiving coins.")
     << std::endl
-    << tr("2) Do not send coins from the Mining account to any wallet you don't have control over. Sweeping your coins to the Primary account (after running sweep_mined) is recommended.");
+    << tr("2) Run sweep_mined to make mined outputs usable.")
+    << std::endl
+    << tr("3) Sweeping your coins to the Primary account (after running sweep_mined) is recommended.")
+    << std::endl;
 
   std::string accepted = input_line("Is this okay? (Y/Yes/N/No): ");
   if (std::cin.eof())
@@ -4165,11 +4171,11 @@ void simple_wallet::on_new_block(uint64_t height, const cryptonote::block& block
 //----------------------------------------------------------------------------------------------------
 void simple_wallet::on_money_received(uint64_t height, const crypto::hash &txid, const cryptonote::transaction& tx, uint64_t amount, const cryptonote::subaddress_index& subaddr_index)
 {
-  message_writer(console_color_green, false) << "\r" <<
-    tr("Height ") << height << ", " <<
-    tr("txid ") << txid << ", " <<
-    print_money(amount) << ", " <<
-    tr("idx ") << subaddr_index;
+    message_writer(console_color_green, false) << "\r" <<
+        tr("Height ") << height << ", " <<
+        tr("txid ") << txid << ", " <<
+        print_money(amount) << ", " <<
+        tr("idx ") << subaddr_index;
 
     std::vector<tx_extra_field> tx_extra_fields;
     parse_tx_extra(tx.extra, tx_extra_fields); // failure ok
