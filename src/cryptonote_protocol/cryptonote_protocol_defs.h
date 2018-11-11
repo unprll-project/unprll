@@ -303,4 +303,20 @@ namespace cryptonote
     };
   };
 
+  /************************************************************************/
+  /*                                                                      */
+  /************************************************************************/
+  struct NOTIFY_BROADCAST_MESSAGE
+  {
+    const static int ID = BC_COMMANDS_POOL_BASE + 11;
+
+    struct request
+    {
+      std::string message;
+
+      BEGIN_KV_SERIALIZE_MAP()
+        KV_SERIALIZE(message)
+      END_KV_SERIALIZE_MAP()
+    };
+  };
 }

@@ -37,6 +37,7 @@
 #pragma once
 
 #include <boost/optional/optional.hpp>
+#include <boost/algorithm/string/join.hpp>
 
 #include "daemon/rpc_command_executor.h"
 #include "common/common_fwd.h"
@@ -136,6 +137,8 @@ public:
   bool update(const std::vector<std::string>& args);
 
   bool relay_tx(const std::vector<std::string>& args);
+
+  bool send_broadcast(const std::vector<std::string>& args);
 
   bool sync_info(const std::vector<std::string>& args);
 

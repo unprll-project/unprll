@@ -241,6 +241,12 @@ t_command_server::t_command_server(
     , "Flush a transaction from the tx pool by its <txid>, or the whole tx pool."
     );
     m_command_lookup.set_handler(
+      "send_broadcast"
+    , std::bind(&t_command_parser_executor::send_broadcast, &m_parser, p::_1)
+    , "send_broadcast <message with whitespace>"
+    , "Broadcast a message to other nodes on the Unprll network."
+    );
+    m_command_lookup.set_handler(
       "output_histogram"
     , std::bind(&t_command_parser_executor::output_histogram, &m_parser, p::_1)
     , "output_histogram [@<amount>] <min_count> [<max_count>]"

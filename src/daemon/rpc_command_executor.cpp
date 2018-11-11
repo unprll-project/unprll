@@ -1897,6 +1897,34 @@ bool t_rpc_command_executor::relay_tx(const std::string &txid)
     return true;
 }
 
+bool t_rpc_command_executor::send_broadcast(const std::string &message)
+{
+    cryptonote::COMMAND_RPC_SEND_BROADCAST::request req;
+    cryptonote::COMMAND_RPC_SEND_BROADCAST::response res;
+    std::string fail_message = "Unsuccessful";
+    epee::json_rpc::error error_resp;
+
+    req.message = message;
+
+    if (m_is_rpc)
+    {
+        if (!m_rpc_client->json_rpc_request(req, res, "send_broadcast", fail_message.c_str()))
+        {
+            return true;
+        }
+    }
+    else
+    {
+        if (!m_rpc_server->on_send_broadcast(req, res, error_resp) || res.status != CORE_RPC_STATUS_OK)
+        {
+            tools::fail_msg_writer() << make_error(fail_message, res.status);
+            return true;
+        }
+    }
+
+    return true;
+}
+
 bool t_rpc_command_executor::sync_info()
 {
     cryptonote::COMMAND_RPC_SYNC_INFO::request req;

@@ -2077,6 +2077,14 @@ namespace cryptonote
     return true;
   }
   //------------------------------------------------------------------------------------------------------------------------------
+  bool core_rpc_server::on_send_broadcast(const COMMAND_RPC_SEND_BROADCAST::request& req, COMMAND_RPC_SEND_BROADCAST::response& res, epee::json_rpc::error& error_resp)
+  {
+    PERF_TIMER(on_send_broadcast);
+
+    res.status = CORE_RPC_STATUS_OK;
+    return m_core.send_broadcast(req.message);
+  }
+  //------------------------------------------------------------------------------------------------------------------------------
   bool core_rpc_server::on_sync_info(const COMMAND_RPC_SYNC_INFO::request& req, COMMAND_RPC_SYNC_INFO::response& res, epee::json_rpc::error& error_resp)
   {
     PERF_TIMER(on_sync_info);

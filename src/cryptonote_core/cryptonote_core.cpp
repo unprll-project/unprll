@@ -1330,6 +1330,32 @@ namespace cryptonote
   }
 
   //-----------------------------------------------------------------------------------------------
+  bool core::send_broadcast(std::string message)
+  {
+    cryptonote_connection_context exclude_context = boost::value_initialized<cryptonote_connection_context>();
+    NOTIFY_BROADCAST_MESSAGE::request arg = AUTO_VAL_INIT(arg);
+    arg.message = message;
+    m_pprotocol->relay_broadcast_message(arg, exclude_context);
+    return true;
+  }
+  //-----------------------------------------------------------------------------------------------
+  bool core::show_broadcast_message(std::string message)
+  {
+    if (std::find(std::begin(m_messages), std::end(m_messages), message) == std::end(m_messages)) {
+        m_messages.push_back(message);
+        MGINFO(message);
+        return true;
+    }
+    // We've seen this message already
+    return false;
+  }
+  //-----------------------------------------------------------------------------------------------
+  bool core::clear_broadcast_messages()
+  {
+      m_messages.clear();
+      return true;
+  }
+  //-----------------------------------------------------------------------------------------------
   bool core::handle_incoming_block(const blobdata& block_blob, block_verification_context& bvc, bool update_miner_blocktemplate)
   {
     TRY_ENTRY();
@@ -1424,7 +1450,7 @@ namespace cryptonote
   bool core::get_pool_transaction(const crypto::hash &id, cryptonote::blobdata& tx) const
   {
     return m_mempool.get_transaction(id, tx);
-  }  
+  }
   //-----------------------------------------------------------------------------------------------
   bool core::pool_has_tx(const crypto::hash &id) const
   {
@@ -1502,6 +1528,7 @@ namespace cryptonote
     m_txpool_auto_relayer.do_call(boost::bind(&core::relay_txpool_transactions, this));
     m_check_updates_interval.do_call(boost::bind(&core::check_updates, this));
     m_check_disk_space_interval.do_call(boost::bind(&core::check_disk_space, this));
+    m_broadcast_clearer.do_call(boost::bind(&core::clear_broadcast_messages, this));
     m_miner.on_idle();
     m_mempool.on_idle();
     return true;

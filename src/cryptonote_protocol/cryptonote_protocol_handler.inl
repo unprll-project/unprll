@@ -456,6 +456,18 @@ namespace cryptonote
 
       return 1;
   }
+  //------------------------------------------------------------------------------------------------------------------------
+  template<class t_core>
+  int t_cryptonote_protocol_handler<t_core>::handle_notify_broadcast_message(int command, NOTIFY_BROADCAST_MESSAGE::request& arg, cryptonote_connection_context& context)
+  {
+      MLOG_P2P_MESSAGE("Received broadcast message");
+      if (m_core.show_broadcast_message(arg.message)) {
+          relay_broadcast_message(arg, context);
+      }
+      return 1;
+  }
+  //------------------------------------------------------------------------------------------------------------------------
+  template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::handle_notify_new_fluffy_block(int command, NOTIFY_NEW_FLUFFY_BLOCK::request& arg, cryptonote_connection_context& context)
   {
     MLOG_P2P_MESSAGE("Received NOTIFY_NEW_FLUFFY_BLOCK (height " << arg.current_blockchain_height << ", " << arg.b.txs.size() << " txes)");
@@ -1844,6 +1856,14 @@ skip:
   {
     return relay_post_notify<NOTIFY_INVALID_BLOCK>(arg, exclude_context);
   }
+  //------------------------------------------------------------------------------------------------------------------------
+  template<class t_core>
+  bool t_cryptonote_protocol_handler<t_core>::relay_broadcast_message(NOTIFY_BROADCAST_MESSAGE::request& arg, cryptonote_connection_context& exclude_context)
+  {
+    return relay_post_notify<NOTIFY_BROADCAST_MESSAGE>(arg, exclude_context);
+  }
+  //------------------------------------------------------------------------------------------------------------------------
+  template<class t_core>
   void t_cryptonote_protocol_handler<t_core>::drop_connection(cryptonote_connection_context &context, bool add_fail, bool flush_all_spans)
   {
     LOG_DEBUG_CC(context, "dropping connection id " << context.m_connection_id <<
@@ -1884,4 +1904,3 @@ skip:
     m_core.stop();
   }
 } // namespace
-

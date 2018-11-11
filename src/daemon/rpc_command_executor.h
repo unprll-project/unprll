@@ -151,6 +151,8 @@ public:
 
   bool relay_tx(const std::string &txid);
 
+  bool send_broadcast(const std::string &message);
+
   bool sync_info();
 };
 

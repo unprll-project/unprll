@@ -2170,6 +2170,26 @@ namespace cryptonote
     };
   };
 
+  struct COMMAND_RPC_SEND_BROADCAST
+  {
+    struct request
+    {
+      std::string message;
+
+      BEGIN_KV_SERIALIZE_MAP()
+        KV_SERIALIZE(message)
+      END_KV_SERIALIZE_MAP()
+    };
+
+    struct response
+    {
+      std::string status;
+      BEGIN_KV_SERIALIZE_MAP()
+        KV_SERIALIZE(status)
+      END_KV_SERIALIZE_MAP()
+    };
+  };
+
   struct COMMAND_RPC_SYNC_INFO
   {
     struct request
