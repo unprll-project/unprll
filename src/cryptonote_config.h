@@ -44,11 +44,11 @@
 #define CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW            3          // Block spans of 4 blocks = 3*4 = 12 blocks
 #define CURRENT_TRANSACTION_VERSION                     2
 #define CURRENT_BLOCK_MAJOR_VERSION                     1
-#define CURRENT_BLOCK_MINOR_VERSION                     0
-#define CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT              60*60*2
+#define CURRENT_BLOCK_MINOR_VERSION                     9
+#define CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT              1800       // 3 * 600
 #define CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE             2          // Blocks
 
-#define BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW               60
+#define BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW               11
 
 // MONEY_SUPPLY - total number coins to be generated
 #define MONEY_SUPPLY                                    ((uint64_t)(-1))
@@ -70,6 +70,9 @@
 
 #define ORPHANED_BLOCKS_MAX_COUNT                       100
 
+#define DIFFICULTY_TARGET                               600  // seconds
+#define DIFFICULTY_WINDOW                               60
+#define DIFFICULTY_BLOCKS_COUNT                         DIFFICULTY_WINDOW + 1
 
 #define CRYPTONOTE_LOCKED_TX_ALLOWED_DELTA_BLOCKS       1
 

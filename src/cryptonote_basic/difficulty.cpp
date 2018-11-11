@@ -26,9 +26,12 @@
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
+// The LWMA-4 Difficulty algorithm as implemented below is under a separate license
+// to the rest of this file.
+//
 // Parts of this file are originally copyright (c) 2012-2013 The Cryptonote developers
 
-#include <algorithm>
+#include <boost/algorithm/clamp.hpp>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -119,47 +122,88 @@ namespace cryptonote {
     return !carry;
   }
 
-  difficulty_type next_difficulty(std::vector<std::uint64_t> timestamps, std::vector<difficulty_type> cumulative_difficulties, size_t target_seconds) {
+    // LWMA-4 difficulty algorithm
+    // Copyright (c) 2017-2018 Zawy
+    // MIT license
+    //
+    // Permission is hereby granted, free of charge, to any person obtaining a copy
+    // of this software and associated documentation files (the "Software"), to
+    // deal in the Software without restriction, including without limitation the
+    // rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    // sell copies of the Software, and to permit persons to whom the Software is
+    // furnished to do so, subject to the following conditions:
+    //
+    // The above copyright notice and this permission notice shall be included in
+    // all copies or substantial portions of the Software.
+    //
+    // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+    // WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+    // OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+    //
+    // https://github.com/zawy12/difficulty-algorithms/issues/3
+    // See commented version for explanations & required config file changes. Fix FTL and MTP!
+    difficulty_type next_difficulty(std::vector<uint64_t> timestamps, std::vector<difficulty_type> cumulative_difficulties, size_t target_seconds) {
+        uint64_t  T = DIFFICULTY_TARGET;
+        uint64_t  N = DIFFICULTY_WINDOW; // N=45, 60, and 90 for T=600, 120, 60.
+        uint64_t  L(0), ST(0), next_D, prev_D, avg_D, i;
 
-    if(timestamps.size() > DIFFICULTY_WINDOW)
-    {
-      timestamps.resize(DIFFICULTY_WINDOW);
-      cumulative_difficulties.resize(DIFFICULTY_WINDOW);
-    }
+        assert(timestamps.size() == cumulative_difficulties.size() && timestamps.size() <= N+1 );
 
+        // If it's a new coin, do startup code. Do not remove in case other coins copy your code.
+        uint64_t difficulty_guess = 100;
+        if (timestamps.size() <= 12 ) {   return difficulty_guess;   }
+        if ( timestamps.size()  < N +1 ) { N = timestamps.size()-1;  }
 
-    size_t length = timestamps.size();
-    assert(length == cumulative_difficulties.size());
-    if (length <= 1) {
-      return 1;
-    }
-    static_assert(DIFFICULTY_WINDOW >= 2, "Window is too small");
-    assert(length <= DIFFICULTY_WINDOW);
-    sort(timestamps.begin(), timestamps.end());
-    size_t cut_begin, cut_end;
-    static_assert(2 * DIFFICULTY_CUT <= DIFFICULTY_WINDOW - 2, "Cut length is too large");
-    if (length <= DIFFICULTY_WINDOW - 2 * DIFFICULTY_CUT) {
-      cut_begin = 0;
-      cut_end = length;
-    } else {
-      cut_begin = (length - (DIFFICULTY_WINDOW - 2 * DIFFICULTY_CUT) + 1) / 2;
-      cut_end = cut_begin + (DIFFICULTY_WINDOW - 2 * DIFFICULTY_CUT);
-    }
-    assert(/*cut_begin >= 0 &&*/ cut_begin + 2 <= cut_end && cut_end <= length);
-    uint64_t time_span = timestamps[cut_end - 1] - timestamps[cut_begin];
-    if (time_span == 0) {
-      time_span = 1;
-    }
-    difficulty_type total_work = cumulative_difficulties[cut_end - 1] - cumulative_difficulties[cut_begin];
-    assert(total_work > 0);
-    uint64_t low, high;
-    mul(total_work, target_seconds, low, high);
-    // blockchain errors "difficulty overhead" if this function returns zero.
-    // TODO: consider throwing an exception instead
-    if (high != 0 || low + time_span - 1 < low) {
-      return 0;
-    }
-    return (low + time_span - 1) / time_span;
-  }
+        // If hashrate/difficulty ratio after a fork is < 1/3 prior ratio, hardcode D for N+1 blocks after fork.
+        // This will also cover up a very common type of backwards-incompatible fork.
+        // difficulty_guess = 100000; //  Dev may change.  Guess low than anything expected.
+        // if ( height <= UPGRADE_HEIGHT + 1 + N ) { return difficulty_guess;  }
 
+        // Safely convert out-of-sequence timestamps into > 0 solvetimes.
+        std::vector<uint64_t>TS(N+1);
+        TS[0] = timestamps[0];
+        for ( i = 1; i <= N; i++) {
+            if ( timestamps[i]  > TS[i-1]  ) {   TS[i] = timestamps[i];  }
+            else {  TS[i] = TS[i-1];   }
+        }
+
+        for ( i = 1; i <= N; i++) {
+            // Temper long solvetime drops if they were preceded by 3 or 6 fast solves.
+            if ( i > 4 && TS[i]-TS[i-1] > 5*T  && TS[i-1] - TS[i-4] < (14*T)/10 ) {   ST = 2*T; }
+            else if ( i > 7 && TS[i]-TS[i-1] > 5*T  && TS[i-1] - TS[i-7] < 4*T ) {   ST = 2*T; }
+            else { // Assume normal conditions, so get ST.
+                // LWMA drops too much from long ST, so limit drops with a 5*T limit
+                ST = std::min(5*T ,TS[i] - TS[i-1]);
+            }
+            L +=  ST * i ;
+        }
+        if (L < N*N*T/20 ) { L =  N*N*T/20; }
+        avg_D = ( cumulative_difficulties[N] - cumulative_difficulties[0] )/ N;
+
+        // Prevent round off error for small D and overflow for large D.
+        if (avg_D > 2000000*N*N*T) {
+            next_D = (avg_D/(200*L))*(N*(N+1)*T*97);
+        }
+        else {    next_D = (avg_D*N*(N+1)*T*97)/(200*L);    }
+
+        prev_D =  cumulative_difficulties[N] - cumulative_difficulties[N-1] ;
+
+        // Apply 10% jump rule.
+        if (( TS[N] - TS[N-1] < (2*T)/10 ) ||
+            ( TS[N] - TS[N-2] < (5*T)/10 ) ||
+            ( TS[N] - TS[N-3] < (8*T)/10 ))
+        {
+            next_D = std::max( next_D, std::min( (prev_D*110)/100, (105*avg_D)/100 ) );
+        }
+        // Make all insignificant digits zero for easy reading.
+        i = 1000000000;
+        while (i > 1) {
+            if ( next_D > i*100 ) { next_D = ((next_D+i/2)/i)*i; break; }
+            else { i /= 10; }
+        }
+        return  next_D;
+    }
 }
