@@ -1563,7 +1563,7 @@ namespace cryptonote
     uint32_t num_double_spends;
     uint32_t num_dandelion_stem;
 
-    txpool_stats(): bytes_total(0), bytes_min(0), bytes_max(0), bytes_med(0), fee_total(0), oldest(0), txs_total(0), num_failing(0), num_10m(0), num_not_relayed(0), histo_98pc(0), num_double_spends(0) {}
+    txpool_stats(): bytes_total(0), bytes_min(0), bytes_max(0), bytes_med(0), fee_total(0), oldest(0), txs_total(0), num_failing(0), num_10m(0), num_not_relayed(0), histo_98pc(0), num_double_spends(0), num_dandelion_stem(0) {}
 
     BEGIN_KV_SERIALIZE_MAP()
       KV_SERIALIZE(bytes_total)
