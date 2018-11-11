@@ -1297,6 +1297,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
       }
 
       block.timestamp = timestamp;
+      return true;
   } else {
       // Multithread verification for (usually) faster performance
 
