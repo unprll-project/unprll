@@ -862,6 +862,11 @@ namespace cryptonote
         continue;
       if(m_mempool.have_tx(results[i].hash))
       {
+        // Could be a dandelion stem transaction
+        if (m_mempool.is_dandelion_stem_tx(results[i].hash)) {
+            LOG_PRINT_L2("tx " << results[i].hash << " is entering fluff mode");
+            m_mempool.enable_dandelion_fluff(results[i].hash);
+        }
         LOG_PRINT_L2("tx " << results[i].hash << "already have transaction in tx_pool");
         already_have[i] = true;
       }
@@ -1135,6 +1140,11 @@ namespace cryptonote
 
     if(m_mempool.have_tx(tx_hash))
     {
+      // Could be a dandelion stem transaction
+      if (m_mempool.is_dandelion_stem_tx(tx_hash)) {
+          LOG_PRINT_L2("tx " << tx_hash << " is entering fluff mode");
+          m_mempool.enable_dandelion_fluff(tx_hash);
+      }
       LOG_PRINT_L2("tx " << tx_hash << "already have transaction in tx_pool");
       return true;
     }
@@ -1158,6 +1168,7 @@ namespace cryptonote
       cryptonote_connection_context fake_context = AUTO_VAL_INIT(fake_context);
       tx_verification_context tvc = AUTO_VAL_INIT(tvc);
       NOTIFY_NEW_TRANSACTIONS::request r;
+      r.dandelion = false;
       for (auto it = txs.begin(); it != txs.end(); ++it)
       {
         r.txs.push_back(it->second);
@@ -1255,7 +1266,6 @@ namespace cryptonote
     //anyway - update miner template
     update_miner_block_template();
     m_miner.resume();
-
 
     CHECK_AND_ASSERT_MES(!bvc.m_verifivation_failed, false, "mined block failed verification");
     if(bvc.m_added_to_main_chain)

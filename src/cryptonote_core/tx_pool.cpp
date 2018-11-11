@@ -239,6 +239,7 @@ namespace cryptonote
         meta.relayed = relayed;
         meta.do_not_relay = do_not_relay;
         meta.double_spend_seen = have_tx_keyimges_as_spent(tx);
+        meta.dandelion_stem = false; // Kept by block transactions were already broadcast in stem mode
         meta.bf_padding = 0;
         memset(meta.padding, 0, sizeof(meta.padding));
         try
@@ -279,6 +280,7 @@ namespace cryptonote
       meta.relayed = relayed;
       meta.do_not_relay = do_not_relay;
       meta.double_spend_seen = false;
+      meta.dandelion_stem = true;
       meta.bf_padding = 0;
       memset(meta.padding, 0, sizeof(meta.padding));
 
@@ -446,7 +448,7 @@ namespace cryptonote
     return true;
   }
   //---------------------------------------------------------------------------------
-  bool tx_memory_pool::take_tx(const crypto::hash &id, transaction &tx, size_t& tx_weight, uint64_t& fee, bool &relayed, bool &do_not_relay, bool &double_spend_seen)
+  bool tx_memory_pool::take_tx(const crypto::hash &id, transaction &tx, size_t& tx_weight, uint64_t& fee, bool &relayed, bool &do_not_relay, bool &double_spend_seen, bool &dandelion_stem)
   {
     CRITICAL_REGION_LOCAL(m_transactions_lock);
     CRITICAL_REGION_LOCAL1(m_blockchain);
@@ -475,6 +477,7 @@ namespace cryptonote
       relayed = meta.relayed;
       do_not_relay = meta.do_not_relay;
       double_spend_seen = meta.double_spend_seen;
+      dandelion_stem = meta.dandelion_stem;
 
       // remove first, in case this throws, so key images aren't removed
       m_blockchain.remove_txpool_tx(id);
@@ -495,6 +498,7 @@ namespace cryptonote
   void tx_memory_pool::on_idle()
   {
     m_remove_stuck_tx_interval.do_call([this](){return remove_stuck_transactions();});
+    m_clear_dandelion_embargo_interval.do_call([this](){return clear_dandelion_embargo();});
   }
   //---------------------------------------------------------------------------------
   sorted_tx_container::iterator tx_memory_pool::find_tx_in_sorted_container(const crypto::hash& id) const
@@ -567,6 +571,34 @@ namespace cryptonote
     return true;
   }
   //---------------------------------------------------------------------------------
+  bool tx_memory_pool::clear_dandelion_embargo()
+  {
+    CRITICAL_REGION_LOCAL(m_transactions_lock);
+    CRITICAL_REGION_LOCAL1(m_blockchain);
+    std::unordered_set<crypto::hash> move_to_fluff;
+    m_blockchain.for_all_txpool_txes([this, &move_to_fluff](const crypto::hash &txid, const txpool_tx_meta_t &meta, const cryptonote::blobdata*) {
+      uint64_t tx_age = time(nullptr) - meta.receive_time;
+
+      if(meta.dandelion_stem && tx_age > config::DANDELION_TX_EMBARGO_PERIOD)
+      {
+        LOG_PRINT_L1("Tx " << txid << " is entering fluff mode due to embargo timeout: " << tx_age << " seconds");
+        move_to_fluff.insert(txid);
+      }
+      return true;
+    }, false);
+
+    if (!move_to_fluff.empty())
+    {
+      LockedTXN lock(m_blockchain);
+      for (const crypto::hash &txid: move_to_fluff)
+      {
+          enable_dandelion_fluff(txid);
+      }
+      ++m_cookie;
+    }
+    return true;
+  }
+  //---------------------------------------------------------------------------------
   //TODO: investigate whether boolean return is appropriate
   bool tx_memory_pool::get_relayable_transactions(std::vector<std::pair<crypto::hash, cryptonote::blobdata>> &txs) const
   {
@@ -576,7 +608,7 @@ namespace cryptonote
     txs.reserve(m_blockchain.get_txpool_tx_count());
     m_blockchain.for_all_txpool_txes([this, now, &txs](const crypto::hash &txid, const txpool_tx_meta_t &meta, const cryptonote::blobdata *){
       // 0 fee transactions are never relayed
-      if(meta.fee > 0 && !meta.do_not_relay && now - meta.last_relayed_time > get_relay_delay(now, meta.receive_time))
+      if(meta.fee > 0 && !meta.dandelion_stem && !meta.do_not_relay && now - meta.last_relayed_time > get_relay_delay(now, meta.receive_time))
       {
         // if the tx is older than half the max lifetime, we don't re-relay it, to avoid a problem
         // mentioned by smooth where nodes would flush txes at slightly different times, causing
@@ -705,6 +737,8 @@ namespace cryptonote
       agebytes[age].bytes += meta.weight;
       if (meta.double_spend_seen)
         ++stats.num_double_spends;
+      if (meta.dandelion_stem)
+        ++stats.num_dandelion_stem;
       return true;
       }, false, include_unrelayed_txes);
     stats.bytes_med = epee::misc_utils::median(weights);
@@ -784,6 +818,9 @@ namespace cryptonote
       txi.relayed = meta.relayed;
       // In restricted mode we do not include this data:
       txi.last_relayed_time = include_sensitive_data ? meta.last_relayed_time : 0;
+      // In restricted mode we do not include this data:
+      // TODO Or should I avoid sending the tx?
+      txi.dandelion_stem = include_sensitive_data ? meta.dandelion_stem : 0;
       txi.do_not_relay = meta.do_not_relay;
       txi.double_spend_seen = meta.double_spend_seen;
       tx_infos.push_back(txi);
@@ -856,6 +893,7 @@ namespace cryptonote
       txi.last_relayed_time = meta.last_relayed_time;
       txi.do_not_relay = meta.do_not_relay;
       txi.double_spend_seen = meta.double_spend_seen;
+      txi.dandelion_stem = meta.dandelion_stem;
       tx_infos.push_back(txi);
       return true;
     }, true, false);
@@ -922,6 +960,43 @@ namespace cryptonote
     CRITICAL_REGION_LOCAL(m_transactions_lock);
     CRITICAL_REGION_LOCAL1(m_blockchain);
     return m_blockchain.get_db().txpool_has_tx(id);
+  }
+  //---------------------------------------------------------------------------------
+  bool tx_memory_pool::is_dandelion_stem_tx(const crypto::hash &id) const
+  {
+    CRITICAL_REGION_LOCAL(m_transactions_lock);
+    CRITICAL_REGION_LOCAL1(m_blockchain);
+    txpool_tx_meta_t meta;
+    if (!m_blockchain.get_txpool_tx_meta(id, meta)) {
+        // FIXME Errorneous case, really. The tx is assumed to exist if this
+        // function is called
+        return false;
+    }
+    return meta.dandelion_stem;
+  }
+  //---------------------------------------------------------------------------------
+  bool tx_memory_pool::enable_dandelion_fluff(const crypto::hash &id)
+  {
+    CRITICAL_REGION_LOCAL(m_transactions_lock);
+    CRITICAL_REGION_LOCAL1(m_blockchain);
+    LockedTXN lock(m_blockchain);
+
+    txpool_tx_meta_t meta;
+    if (m_blockchain.get_txpool_tx_meta(id, meta)) {
+        meta.dandelion_stem = false;
+        try
+        {
+            m_blockchain.update_txpool_tx(id, meta);
+        }
+        catch (const std::exception &e)
+        {
+            MERROR("Failed to update tx meta: " << e.what());
+            return false;
+        }
+        return true;
+    }
+
+    return false;
   }
   //---------------------------------------------------------------------------------
   bool tx_memory_pool::have_tx_keyimges_as_spent(const transaction& tx) const
@@ -991,6 +1066,13 @@ namespace cryptonote
       transaction &tx;
       bool parsed;
     } lazy_tx(txblob, tx);
+
+    // TODO FIXME Check if this works
+    // If it's a Dandelion stem transaction, don't include it yet
+    if (txd.dandelion_stem) {
+        #warning Does this work as expected?
+        return false;
+    }
 
     //not the best implementation at this time, sorry :(
     //check is ring_signature already checked ?
@@ -1123,6 +1205,7 @@ namespace cryptonote
         << "fee: " << print_money(meta.fee) << std::endl
         << "kept_by_block: " << (meta.kept_by_block ? 'T' : 'F') << std::endl
         << "double_spend_seen: " << (meta.double_spend_seen ? 'T' : 'F') << std::endl
+        << "dandelion_stem: " << (meta.dandelion_stem ? 'T' : 'F') << std::endl
         << "max_used_block_height: " << meta.max_used_block_height << std::endl
         << "max_used_block_id: " << meta.max_used_block_id << std::endl
         << "last_failed_height: " << meta.last_failed_height << std::endl
@@ -1142,7 +1225,7 @@ namespace cryptonote
     uint64_t best_coinbase = 0, coinbase = 0;
     total_weight = 0;
     fee = 0;
-    
+
     //baseline empty block
     get_block_reward(median_weight, total_weight, already_generated_coins, best_coinbase, version);
 

@@ -98,6 +98,7 @@ namespace rpc
     bool relayed;
     bool do_not_relay;
     bool double_spend_seen;
+    bool dandelion_stem;
   };
 
   typedef std::unordered_map<crypto::key_image, std::vector<crypto::hash> > key_images_with_tx_hashes;

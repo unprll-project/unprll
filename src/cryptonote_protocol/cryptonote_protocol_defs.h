@@ -146,9 +146,11 @@ namespace cryptonote
 
     struct request
     {
+      bool dandelion;
       std::vector<blobdata>   txs;
 
       BEGIN_KV_SERIALIZE_MAP()
+        KV_SERIALIZE(dandelion)
         KV_SERIALIZE(txs)
       END_KV_SERIALIZE_MAP()
     };

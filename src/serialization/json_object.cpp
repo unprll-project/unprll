@@ -774,6 +774,7 @@ void toJsonValue(rapidjson::Document& doc, const cryptonote::rpc::tx_in_pool& tx
   INSERT_INTO_JSON_OBJECT(val, doc, relayed, tx.relayed);
   INSERT_INTO_JSON_OBJECT(val, doc, do_not_relay, tx.do_not_relay);
   INSERT_INTO_JSON_OBJECT(val, doc, double_spend_seen, tx.double_spend_seen);
+  INSERT_INTO_JSON_OBJECT(val, doc, dandelion_stem, tx.dandelion_stem);
 }
 
 
@@ -798,6 +799,7 @@ void fromJsonValue(const rapidjson::Value& val, cryptonote::rpc::tx_in_pool& tx)
   GET_FROM_JSON_OBJECT(val, tx.relayed, relayed);
   GET_FROM_JSON_OBJECT(val, tx.do_not_relay, do_not_relay);
   GET_FROM_JSON_OBJECT(val, tx.double_spend_seen, double_spend_seen);
+  GET_FROM_JSON_OBJECT(val, tx.dandelion_stem, dandelion_stem);
 }
 
 void toJsonValue(rapidjson::Document& doc, const cryptonote::rpc::hard_fork_info& info, rapidjson::Value& val)

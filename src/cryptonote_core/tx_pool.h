@@ -138,10 +138,11 @@ namespace cryptonote
      * @param relayed return-by-reference was transaction relayed to us by the network?
      * @param do_not_relay return-by-reference is transaction not to be relayed to the network?
      * @param double_spend_seen return-by-reference was a double spend seen for that transaction?
+     * @param dandelion_stem return-by-reference is it in dandelion stem broadcast mode?
      *
      * @return true unless the transaction cannot be found in the pool
      */
-    bool take_tx(const crypto::hash &id, transaction &tx, size_t& tx_weight, uint64_t& fee, bool &relayed, bool &do_not_relay, bool &double_spend_seen);
+    bool take_tx(const crypto::hash &id, transaction &tx, size_t& tx_weight, uint64_t& fee, bool &relayed, bool &do_not_relay, bool &double_spend_seen, bool &dandelion_stem);
 
     /**
      * @brief checks if the pool has a transaction with the given hash
@@ -151,6 +152,24 @@ namespace cryptonote
      * @return true if the transaction is in the pool, otherwise false
      */
     bool have_tx(const crypto::hash &id) const;
+
+    /**
+     * @brief checks if the given transaction is in dandelion stem mode
+     *
+     * @param id the hash to look for
+     *
+     * @return true if the transaction is in dandelion stem mode, otherwise false
+     */
+    bool is_dandelion_stem_tx(const crypto::hash &id) const;
+
+    /**
+     * @brief moves the given transaction into dandelion fluff mode
+     *
+     * @param id the hash to update
+     *
+     * @return true if the transaction was moved to fluff mode, false otherwise
+     */
+    bool enable_dandelion_fluff(const crypto::hash &id);
 
     /**
      * @brief action to take when notified of a block added to the blockchain
@@ -402,14 +421,14 @@ namespace cryptonote
       /*! if the transaction was returned to the pool from the blockchain
        *  due to a reorg, then this will be true
        */
-      bool kept_by_block;  
+      bool kept_by_block;
 
       //! the highest block the transaction referenced when last checking it failed
       /*! if verifying a transaction's inputs fails, it's possible this is due
        *  to a reorg since it was created (if it used recently created outputs
        *  as inputs).
        */
-      uint64_t last_failed_height;  
+      uint64_t last_failed_height;
 
       //! the hash of the highest block the transaction referenced when last checking it failed
       /*! if verifying a transaction's inputs fails, it's possible this is due
@@ -425,6 +444,7 @@ namespace cryptonote
       bool do_not_relay; //!< to avoid relay this transaction to the network
 
       bool double_spend_seen; //!< true iff another tx was seen double spending this one
+      bool dandelion_stem; //!< true iff this transaction was relayed to us in dandelion stem mode
     };
 
   private:
@@ -446,6 +466,13 @@ namespace cryptonote
      * @return true
      */
     bool remove_stuck_transactions();
+
+    /**
+     * @brief move dandelion stem transactions out of embargo
+     *
+     * @return true
+     */
+    bool clear_dandelion_embargo();
 
     /**
      * @brief check if a transaction in the pool has a given spent key image
@@ -547,11 +574,12 @@ private:
 #endif
 
     //! container for spent key images from the transactions in the pool
-    key_images_container m_spent_key_images;  
+    key_images_container m_spent_key_images;
 
     //TODO: this time should be a named constant somewhere, not hard-coded
     //! interval on which to check for stale/"stuck" transactions
     epee::math_helper::once_a_time_seconds<30> m_remove_stuck_tx_interval;
+    epee::math_helper::once_a_time_seconds<30> m_clear_dandelion_embargo_interval;
 
     //TODO: look into doing this better
     //!< container for transactions organized by fee per size and receive time
@@ -617,6 +645,3 @@ namespace boost
 }
 BOOST_CLASS_VERSION(cryptonote::tx_memory_pool, CURRENT_MEMPOOL_ARCHIVE_VER)
 BOOST_CLASS_VERSION(cryptonote::tx_memory_pool::tx_details, CURRENT_MEMPOOL_TX_DETAILS_ARCHIVE_VER)
-
-
-

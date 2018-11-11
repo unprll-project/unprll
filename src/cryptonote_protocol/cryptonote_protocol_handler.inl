@@ -38,6 +38,7 @@
 
 #include <boost/interprocess/detail/atomic.hpp>
 #include <list>
+#include <random>
 #include <ctime>
 
 #include "cryptonote_basic/cryptonote_format_utils.h"
@@ -1264,6 +1265,7 @@ skip:
   bool t_cryptonote_protocol_handler<t_core>::on_idle()
   {
     m_idle_peer_kicker.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::kick_idle_peers, this));
+    m_dandelion_stem_selector.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::select_dandelion_stem, this));
     return m_core.on_idle();
   }
   //------------------------------------------------------------------------------------------------------------------------
@@ -1295,6 +1297,37 @@ skip:
         return true;
       });
     }
+    return true;
+  }
+  //------------------------------------------------------------------------------------------------------------------------
+  template<class t_core>
+  bool t_cryptonote_protocol_handler<t_core>::select_dandelion_stem()
+  {
+    MTRACE("Choosing Dandelion stem...");
+
+    std::vector<boost::uuids::uuid> alive_peers;
+    m_p2p->for_each_connection([&](cryptonote_connection_context& context, nodetool::peerid_type peer_id, uint32_t support_flags)->bool
+    {
+      if (!(context.m_state == cryptonote_connection_context::state_synchronizing || context.m_state == cryptonote_connection_context::state_before_handshake))
+      {
+          alive_peers.push_back(context.m_connection_id);
+      }
+      return true;
+    });
+
+    if (!alive_peers.empty()) {
+        boost::uuids::uuid dandelion_peer;
+        std::random_device rd;
+        std::mt19937 rng(rd());
+        std::uniform_int_distribution<> dis(0, std::distance(alive_peers.begin(), alive_peers.end()) - 1);
+        auto it = alive_peers.begin();
+        std::advance(it, dis(rng));
+
+        m_dandelion_peer = *it;
+    } else {
+        m_dandelion_peer = boost::uuids::nil_uuid();
+    }
+
     return true;
   }
   //------------------------------------------------------------------------------------------------------------------------
@@ -1779,9 +1812,30 @@ skip:
   template<class t_core>
   bool t_cryptonote_protocol_handler<t_core>::relay_transactions(NOTIFY_NEW_TRANSACTIONS::request& arg, cryptonote_connection_context& exclude_context)
   {
+    static_assert(config::DANDELION_TX_STEM_PROPAGATION_PROBABILITY > 0 && config::DANDELION_TX_STEM_PROPAGATION_PROBABILITY <= 100, "DANDELION_TX_STEM_PROPAGATION_PROBABILITY must be a valid percent value (1%-100%)");
     // no check for success, so tell core they're relayed unconditionally
     for(auto tx_blob_it = arg.txs.begin(); tx_blob_it!=arg.txs.end(); ++tx_blob_it)
       m_core.on_transaction_relayed(*tx_blob_it);
+
+    // Dandelion broadcast
+    if (arg.dandelion && !m_dandelion_peer.is_nil()) {
+        std::random_device rd;
+        std::mt19937 rng(rd());
+        std::uniform_int_distribution<> dis(0, 100);
+        auto coin_flip = dis(rng);
+        if (coin_flip < config::DANDELION_TX_STEM_PROPAGATION_PROBABILITY) {
+            MDEBUG("Relaying tx in dandelion stem mode");
+            // Stem propagation
+            std::string arg_buff;
+            epee::serialization::store_t_to_binary(arg, arg_buff);
+
+            return m_p2p->relay_notify_to_list(NOTIFY_NEW_TRANSACTIONS::ID, arg_buff, std::list<boost::uuids::uuid>({ m_dandelion_peer }));
+        } else {
+            // Switch to fluff broadcast
+            arg.dandelion = false;
+        }
+    }
+    MDEBUG("Relaying tx in dandelion fluff mode");
     return relay_post_notify<NOTIFY_NEW_TRANSACTIONS>(arg, exclude_context);
   }
   //------------------------------------------------------------------------------------------------------------------------

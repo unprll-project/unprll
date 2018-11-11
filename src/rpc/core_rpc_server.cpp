@@ -745,6 +745,8 @@ namespace cryptonote
     }
 
     NOTIFY_NEW_TRANSACTIONS::request r;
+    // Dandelion by default
+    r.dandelion = true;
     r.txs.push_back(tx_blob);
     m_core.get_protocol()->relay_transactions(r, fake_context);
     //TODO: make sure that tx has reached other nodes here, probably wait to receive reflections from other nodes

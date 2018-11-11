@@ -155,6 +155,9 @@ namespace config
   uint64_t const HASH_CHECKPOINT_STEP = 30; // hashes between each checkpoint
   double const BLOCK_VALID_THRESHOLD = 0.05; // 5% of all hash checkpoints must verify correctly
 
+  // Dandelion config
+  uint8_t const DANDELION_TX_EMBARGO_PERIOD = 30;
+  uint8_t const DANDELION_TX_STEM_PROPAGATION_PROBABILITY = 90;
 
   namespace testnet
   {

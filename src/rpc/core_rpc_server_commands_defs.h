@@ -582,6 +582,7 @@ namespace cryptonote
       std::string as_json;
       bool in_pool;
       bool double_spend_seen;
+      bool dandelion_stem;
       uint64_t block_height;
       uint64_t block_timestamp;
       std::vector<uint64_t> output_indices;
@@ -592,6 +593,7 @@ namespace cryptonote
         KV_SERIALIZE(as_json)
         KV_SERIALIZE(in_pool)
         KV_SERIALIZE(double_spend_seen)
+        KV_SERIALIZE(dandelion_stem)
         KV_SERIALIZE(block_height)
         KV_SERIALIZE(block_timestamp)
         KV_SERIALIZE(output_indices)
@@ -1401,6 +1403,7 @@ namespace cryptonote
     uint64_t last_relayed_time;
     bool do_not_relay;
     bool double_spend_seen;
+    bool dandelion_stem;
     std::string tx_blob;
 
     BEGIN_KV_SERIALIZE_MAP()
@@ -1419,6 +1422,7 @@ namespace cryptonote
       KV_SERIALIZE(last_relayed_time)
       KV_SERIALIZE(do_not_relay)
       KV_SERIALIZE(double_spend_seen)
+      KV_SERIALIZE(dandelion_stem)
       KV_SERIALIZE(tx_blob)
     END_KV_SERIALIZE_MAP()
   };
@@ -1557,6 +1561,7 @@ namespace cryptonote
     uint64_t histo_98pc;
     std::vector<txpool_histo> histo;
     uint32_t num_double_spends;
+    uint32_t num_dandelion_stem;
 
     txpool_stats(): bytes_total(0), bytes_min(0), bytes_max(0), bytes_med(0), fee_total(0), oldest(0), txs_total(0), num_failing(0), num_10m(0), num_not_relayed(0), histo_98pc(0), num_double_spends(0) {}
 
@@ -1574,6 +1579,7 @@ namespace cryptonote
       KV_SERIALIZE(histo_98pc)
       KV_SERIALIZE_CONTAINER_POD_AS_BLOB(histo)
       KV_SERIALIZE(num_double_spends)
+      KV_SERIALIZE(num_dandelion_stem)
     END_KV_SERIALIZE_MAP()
   };
 

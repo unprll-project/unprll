@@ -135,6 +135,7 @@ namespace cryptonote
     bool should_download_next_span(cryptonote_connection_context& context) const;
     void drop_connection(cryptonote_connection_context &context, bool add_fail, bool flush_all_spans);
     bool kick_idle_peers();
+    bool select_dandelion_stem();
     int try_add_next_blocks(cryptonote_connection_context &context);
 
     t_core& m_core;
@@ -147,6 +148,8 @@ namespace cryptonote
     boost::mutex m_sync_lock;
     block_queue m_block_queue;
     epee::math_helper::once_a_time_seconds<30> m_idle_peer_kicker;
+    epee::math_helper::once_a_time_seconds<600> m_dandelion_stem_selector;
+    boost::uuids::uuid m_dandelion_peer;
 
     boost::mutex m_buffer_mutex;
     double get_avg_block_size();

@@ -878,6 +878,7 @@ bool t_rpc_command_executor::print_transaction_pool_long() {
                           << "do_not_relay: " << (tx_info.do_not_relay ? 'T' : 'F')  << std::endl
                           << "kept_by_block: " << (tx_info.kept_by_block ? 'T' : 'F') << std::endl
                           << "double_spend_seen: " << (tx_info.double_spend_seen ? 'T' : 'F')  << std::endl
+                          << "dandelion_stem: " << (tx_info.dandelion_stem ? 'T' : 'F')  << std::endl
                           << "max_used_block_height: " << tx_info.max_used_block_height << std::endl
                           << "max_used_block_id: " << tx_info.max_used_block_id_hash << std::endl
                           << "last_failed_height: " << tx_info.last_failed_height << std::endl
@@ -962,6 +963,7 @@ bool t_rpc_command_executor::print_transaction_pool_short() {
                           << "do_not_relay: " << (tx_info.do_not_relay ? 'T' : 'F')  << std::endl
                           << "kept_by_block: " << (tx_info.kept_by_block ? 'T' : 'F') << std::endl
                           << "double_spend_seen: " << (tx_info.double_spend_seen ? 'T' : 'F') << std::endl
+                          << "dandelion_stem: " << (tx_info.dandelion_stem ? 'T' : 'F') << std::endl
                           << "max_used_block_height: " << tx_info.max_used_block_height << std::endl
                           << "max_used_block_id: " << tx_info.max_used_block_id_hash << std::endl
                           << "last_failed_height: " << tx_info.last_failed_height << std::endl

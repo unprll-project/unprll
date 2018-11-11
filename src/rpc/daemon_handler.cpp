@@ -339,6 +339,8 @@ namespace rpc
     }
 
     NOTIFY_NEW_TRANSACTIONS::request r;
+    // Dandelion by default
+    r.dandelion = true;
     r.txs.push_back(tx_blob);
     m_core.get_protocol()->relay_transactions(r, fake_context);
 
