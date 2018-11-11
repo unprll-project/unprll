@@ -47,8 +47,6 @@ static std::string extra_nonce_to_string(const cryptonote::tx_extra_nonce &extra
 {
   if (extra_nonce.nonce.size() == 9 && extra_nonce.nonce[0] == TX_EXTRA_NONCE_ENCRYPTED_PAYMENT_ID)
     return "encrypted payment ID: " + epee::string_tools::buff_to_hex_nodelimer(extra_nonce.nonce.substr(1));
-  if (extra_nonce.nonce.size() == 33 && extra_nonce.nonce[0] == TX_EXTRA_NONCE_PAYMENT_ID)
-    return "plaintext payment ID: " + epee::string_tools::buff_to_hex_nodelimer(extra_nonce.nonce.substr(1));
   return epee::string_tools::buff_to_hex_nodelimer(extra_nonce.nonce);
 }
 

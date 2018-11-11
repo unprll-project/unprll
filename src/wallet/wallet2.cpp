@@ -1826,11 +1826,6 @@ void wallet2::process_new_transaction(const crypto::hash &txid, const cryptonote
           LOG_PRINT_L1("No public key found in tx, unable to decrypt payment id");
         }
       }
-      else if (get_payment_id_from_tx_extra_nonce(extra_nonce.nonce, payment_id))
-      {
-        LOG_PRINT_L2("Found unencrypted payment ID: " << payment_id);
-        MWARNING("Found unencrypted payment ID: these are bad for privacy, consider using subaddresses instead");
-      }
     }
 
     uint64_t total_received_2 = sub_change;
@@ -1913,14 +1908,15 @@ void wallet2::process_outgoing(const crypto::hash &txid, const cryptonote::trans
       entry.first->second.m_amount_out = spent - tx.rct_signatures.txnFee;
     entry.first->second.m_change = received;
 
-    std::vector<tx_extra_field> tx_extra_fields;
-    parse_tx_extra(tx.extra, tx_extra_fields); // ok if partially parsed
-    tx_extra_nonce extra_nonce;
-    if (find_tx_extra_field_by_type(tx_extra_fields, extra_nonce))
-    {
-      // we do not care about failure here
-      get_payment_id_from_tx_extra_nonce(extra_nonce.nonce, entry.first->second.m_payment_id);
-    }
+    // TODO?
+    // std::vector<tx_extra_field> tx_extra_fields;
+    // parse_tx_extra(tx.extra, tx_extra_fields); // ok if partially parsed
+    // tx_extra_nonce extra_nonce;
+    // if (find_tx_extra_field_by_type(tx_extra_fields, extra_nonce))
+    // {
+    //   // we do not care about failure here
+    //   get_payment_id_from_tx_extra_nonce(extra_nonce.nonce, entry.first->second.m_payment_id);
+    // }
     entry.first->second.m_subaddr_account = subaddr_account;
     entry.first->second.m_subaddr_indices = subaddr_indices;
   }
@@ -4478,19 +4474,6 @@ bool wallet2::wallet_valid_path_format(const std::string& file_path)
   return !file_path.empty();
 }
 //----------------------------------------------------------------------------------------------------
-bool wallet2::parse_long_payment_id(const std::string& payment_id_str, crypto::hash& payment_id)
-{
-  cryptonote::blobdata payment_id_data;
-  if(!epee::string_tools::parse_hexstr_to_binbuff(payment_id_str, payment_id_data))
-    return false;
-
-  if(sizeof(crypto::hash) != payment_id_data.size())
-    return false;
-
-  payment_id = *reinterpret_cast<const crypto::hash*>(payment_id_data.data());
-  return true;
-}
-//----------------------------------------------------------------------------------------------------
 bool wallet2::parse_short_payment_id(const std::string& payment_id_str, crypto::hash8& payment_id)
 {
   cryptonote::blobdata payment_id_data;
@@ -4506,8 +4489,6 @@ bool wallet2::parse_short_payment_id(const std::string& payment_id_str, crypto::
 //----------------------------------------------------------------------------------------------------
 bool wallet2::parse_payment_id(const std::string& payment_id_str, crypto::hash& payment_id)
 {
-  if (parse_long_payment_id(payment_id_str, payment_id))
-    return true;
   crypto::hash8 payment_id8;
   if (parse_short_payment_id(payment_id_str, payment_id8))
   {
@@ -5312,10 +5293,6 @@ crypto::hash wallet2::get_payment_id(const pending_tx &ptx) const
       {
         memcpy(payment_id.data, payment_id8.data, 8);
       }
-    }
-    else if (!get_payment_id_from_tx_extra_nonce(extra_nonce.nonce, payment_id))
-    {
-      payment_id = crypto::null_hash;
     }
   }
   return payment_id;
@@ -9281,7 +9258,13 @@ std::vector<wallet2::pending_tx> wallet2::create_mined_sweep_transactions()
     mined_transfer_outputs.push_back(n);
   }
 
-  return create_transactions_from(m_account_public_address, false, 1, mined_transfer_outputs, mined_dust_outputs, adjust_mixin(12), 0 /* unlock_delta */, adjust_priority(1), std::vector<uint8_t>(), true /* truncated_address */);
+  std::vector<uint8_t> extra;
+  crypto::hash8 payment_id = crypto::rand<crypto::hash8>();
+  std::string extra_nonce;
+  set_encrypted_payment_id_to_tx_extra_nonce(extra_nonce, payment_id);
+  THROW_WALLET_EXCEPTION_IF(!add_extra_nonce_to_tx_extra(extra, extra_nonce), error::wallet_internal_error, "failed to set up payment id");
+
+  return create_transactions_from(m_account_public_address, false, 1, mined_transfer_outputs, mined_dust_outputs, adjust_mixin(12), 0 /* unlock_delta */, adjust_priority(1), extra, true /* truncated_address */);
 }
 
 bool wallet2::get_tx_key(const crypto::hash &txid, crypto::secret_key &tx_key, std::vector<crypto::secret_key> &additional_tx_keys) const
@@ -11359,9 +11342,8 @@ std::string wallet2::make_uri(const std::string &address, const std::string &pay
 
   if (!payment_id.empty())
   {
-    crypto::hash pid32;
     crypto::hash8 pid8;
-    if (!wallet2::parse_long_payment_id(payment_id, pid32) && !wallet2::parse_short_payment_id(payment_id, pid8))
+    if (!wallet2::parse_short_payment_id(payment_id, pid8))
     {
       error = "Invalid payment id";
       return std::string();
@@ -11454,9 +11436,8 @@ bool wallet2::parse_uri(const std::string &uri, std::string &address, std::strin
         error = "Separate payment id given with an integrated address";
         return false;
       }
-      crypto::hash hash;
       crypto::hash8 hash8;
-      if (!wallet2::parse_long_payment_id(kv[1], hash) && !wallet2::parse_short_payment_id(kv[1], hash8))
+      if (!wallet2::parse_short_payment_id(kv[1], hash8))
       {
         error = "Invalid payment id: " + kv[1];
         return false;

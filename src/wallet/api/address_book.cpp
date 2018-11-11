@@ -56,25 +56,18 @@ bool AddressBookImpl::addRow(const std::string &dst_addr , const std::string &pa
   }
 
   crypto::hash payment_id = crypto::null_hash;
-  bool has_long_pid = (payment_id_str.empty())? false : tools::wallet2::parse_long_payment_id(payment_id_str, payment_id);
+  bool has_short_pid = (payment_id_str.empty())? false : tools::wallet2::parse_short_payment_id(payment_id_str, payment_id);
 
-  // Short payment id provided
-  if(payment_id_str.length() == 16) {
-    m_errorString = tr("Invalid payment ID. Short payment ID should only be used in an integrated address");
-    m_errorCode = Invalid_Payment_Id;
-    return false;
-  }
-
-  // long payment id provided but not valid
-  if(!payment_id_str.empty() && !has_long_pid) {
+  // short payment id provided but not valid
+  if(!payment_id_str.empty() && !has_short_pid) {
     m_errorString = tr("Invalid payment ID");
     m_errorCode = Invalid_Payment_Id;
     return false;
   }
 
   // integrated + long payment id provided
-  if(has_long_pid && info.has_payment_id) {
-    m_errorString = tr("Integrated address and long payment ID can't be used at the same time");
+  if(has_short_pid && info.has_payment_id) {
+    m_errorString = tr("Integrated address and short payment ID can't be used at the same time");
     m_errorCode = Invalid_Payment_Id;
     return false;
   }

@@ -121,6 +121,18 @@ namespace cryptonote
       return false;
     }
 
+    // Transactions mandatorily require an encrypted payment ID, even if it's random
+    std::vector<tx_extra_field> tx_extra_fields;
+    parse_tx_extra(tx.extra, tx_extra_fields); // ok if partially parsed
+    tx_extra_nonce extra_nonce;
+    crypto::hash8 payment_id8 = null_hash8;
+    if (!(find_tx_extra_field_by_type(tx_extra_fields, extra_nonce) && get_encrypted_payment_id_from_tx_extra_nonce(extra_nonce.nonce, payment_id8)))
+    {
+        LOG_PRINT_L1("transaction does not have an encrypted payment ID");
+        tvc.m_verifivation_failed = true;
+        return false;
+    }
+
     // we do not accept transactions that timed out before, unless they're
     // kept_by_block
     if (!kept_by_block && m_timed_out_transactions.find(id) != m_timed_out_transactions.end())

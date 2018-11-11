@@ -297,7 +297,6 @@ namespace tools
     bool is_failed = pd.m_state == tools::wallet2::unconfirmed_transfer_details::failed;
     entry.txid = string_tools::pod_to_hex(txid);
     entry.payment_id = string_tools::pod_to_hex(pd.m_payment_id);
-    entry.payment_id = string_tools::pod_to_hex(pd.m_payment_id);
     if (entry.payment_id.substr(16).find_first_not_of('0') == std::string::npos)
       entry.payment_id = entry.payment_id.substr(0,16);
     entry.height = 0;
@@ -682,20 +681,15 @@ namespace tools
       /* Just to clarify */
       const std::string& payment_id_str = payment_id;
 
-      crypto::hash long_payment_id;
       crypto::hash8 short_payment_id;
 
       /* Parse payment ID */
-      if (wallet2::parse_long_payment_id(payment_id_str, long_payment_id)) {
-        cryptonote::set_payment_id_to_tx_extra_nonce(extra_nonce, long_payment_id);
-      }
-      /* or short payment ID */
-      else if (wallet2::parse_short_payment_id(payment_id_str, short_payment_id)) {
+      if (wallet2::parse_short_payment_id(payment_id_str, short_payment_id)) {
         cryptonote::set_encrypted_payment_id_to_tx_extra_nonce(extra_nonce, short_payment_id);
       }
       else {
         er.code = WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID;
-        er.message = "Payment id has invalid format: \"" + payment_id_str + "\", expected 16 or 64 character string";
+        er.message = "Payment id has invalid format: \"" + payment_id_str + "\", expected 16 character string";
         return false;
       }
 
@@ -705,7 +699,6 @@ namespace tools
         er.message = "Something went wrong with payment_id. Please check its format: \"" + payment_id_str + "\", expected 64-character string";
         return false;
       }
-
     }
     return true;
   }
@@ -1395,11 +1388,7 @@ namespace tools
       return false;
     }
 
-      if(sizeof(payment_id) == payment_id_blob.size())
-      {
-        payment_id = *reinterpret_cast<const crypto::hash*>(payment_id_blob.data());
-      }
-      else if(sizeof(payment_id8) == payment_id_blob.size())
+      if(sizeof(payment_id8) == payment_id_blob.size())
       {
         payment_id8 = *reinterpret_cast<const crypto::hash8*>(payment_id_blob.data());
         memcpy(payment_id.data, payment_id8.data, 8);
@@ -1473,11 +1462,7 @@ namespace tools
         return false;
       }
 
-      if(sizeof(payment_id) == payment_id_blob.size())
-      {
-        payment_id = *reinterpret_cast<const crypto::hash*>(payment_id_blob.data());
-      }
-      else if(sizeof(payment_id8) == payment_id_blob.size())
+      if(sizeof(payment_id8) == payment_id_blob.size())
       {
         payment_id8 = *reinterpret_cast<const crypto::hash8*>(payment_id_blob.data());
         memcpy(payment_id.data, payment_id8.data, 8);
@@ -2468,22 +2453,18 @@ namespace tools
         return false;
       }
 
-      crypto::hash long_payment_id;
       crypto::hash8 short_payment_id;
 
-      if (!wallet2::parse_long_payment_id(req.payment_id, payment_id))
+      if (!wallet2::parse_short_payment_id(req.payment_id, info.payment_id))
       {
-        if (!wallet2::parse_short_payment_id(req.payment_id, info.payment_id))
-        {
-          er.code = WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID;
-          er.message = "Payment id has invalid format: \"" + req.payment_id + "\", expected 16 or 64 character string";
-          return false;
-        }
-        else
-        {
-          memcpy(payment_id.data, info.payment_id.data, 8);
-          memset(payment_id.data + 8, 0, 24);
-        }
+        er.code = WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID;
+        er.message = "Payment id has invalid format: \"" + req.payment_id + "\", expected 16 character string";
+        return false;
+      }
+      else
+      {
+        memcpy(payment_id.data, info.payment_id.data, 8);
+        memset(payment_id.data + 8, 0, 24);
       }
     }
     if (!m_wallet->add_address_book_row(info.address, payment_id, req.description, info.is_subaddress))

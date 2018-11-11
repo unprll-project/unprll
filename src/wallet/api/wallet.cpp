@@ -282,9 +282,6 @@ bool Wallet::paymentIdValid(const string &paiment_id)
     crypto::hash8 pid8;
     if (tools::wallet2::parse_short_payment_id(paiment_id, pid8))
         return true;
-    crypto::hash pid;
-    if (tools::wallet2::parse_long_payment_id(paiment_id, pid))
-        return true;
     return false;
 }
 
@@ -1349,23 +1346,15 @@ PendingTransaction *WalletImpl::createTransaction(const string &dst_addr, const 
         // if dst_addr is not an integrated address, parse payment_id
         if (!info.has_payment_id && !payment_id.empty()) {
             // copy-pasted from simplewallet.cpp:2212
-            crypto::hash payment_id_long;
-            bool r = tools::wallet2::parse_long_payment_id(payment_id, payment_id_long);
+            r = tools::wallet2::parse_short_payment_id(payment_id, info.payment_id);
             if (r) {
                 std::string extra_nonce;
-                cryptonote::set_payment_id_to_tx_extra_nonce(extra_nonce, payment_id_long);
+                set_encrypted_payment_id_to_tx_extra_nonce(extra_nonce, info.payment_id);
                 r = add_extra_nonce_to_tx_extra(extra, extra_nonce);
-            } else {
-                r = tools::wallet2::parse_short_payment_id(payment_id, info.payment_id);
-                if (r) {
-                    std::string extra_nonce;
-                    set_encrypted_payment_id_to_tx_extra_nonce(extra_nonce, info.payment_id);
-                    r = add_extra_nonce_to_tx_extra(extra, extra_nonce);
-                }
             }
 
             if (!r) {
-                setStatusError(tr("payment id has invalid format, expected 16 or 64 character hex string: ") + payment_id);
+                setStatusError(tr("payment id has invalid format, expected 16 character hex string: ") + payment_id);
                 break;
             }
         }
