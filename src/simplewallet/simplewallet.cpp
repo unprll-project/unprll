@@ -824,7 +824,7 @@ bool simple_wallet::print_fee_info(const std::vector<std::string> &args/* = std:
       std::string msg;
       if (priority == m_wallet->get_default_priority() || (m_wallet->get_default_priority() == 0 && priority == 2))
         msg = tr(" (current)");
-      uint64_t minutes_low = nblocks_low * DIFFICULTY_TARGET_V2 / 60, minutes_high = nblocks_high * DIFFICULTY_TARGET_V2 / 60;
+      uint64_t minutes_low = nblocks_low * DIFFICULTY_TARGET / 60, minutes_high = nblocks_high * DIFFICULTY_TARGET / 60;
       if (nblocks_high == nblocks_low)
         message_writer() << (boost::format(tr("%u block (%u minutes) backlog at priority %u%s")) % nblocks_low % minutes_low % priority % msg).str();
       else
@@ -3359,7 +3359,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
       while (true)
       {
         std::string heightstr;
-        if (!connected || version < MAKE_CORE_RPC_VERSION(1, 6))
+        if (!connected)
           heightstr = input_line("Restore from specific blockchain height (optional, default 0): ");
         else
           heightstr = input_line("Restore from specific blockchain height (optional, default 0),\nor alternatively from specific date (YYYY-MM-DD): ");
@@ -3377,7 +3377,7 @@ bool simple_wallet::init(const boost::program_options::variables_map& vm)
         }
         catch (const boost::bad_lexical_cast &)
         {
-          if (!connected || version < MAKE_CORE_RPC_VERSION(1, 6))
+          if (!connected)
           {
             fail_msg_writer() << tr("bad m_restore_height parameter: ") << heightstr;
             continue;
@@ -4626,9 +4626,6 @@ bool simple_wallet::print_ring_members(const std::vector<tools::wallet2::pending
     fail_msg_writer() << tr("failed to connect to the daemon");
     return false;
   }
-  // available for RPC version 1.4 or higher
-  if (version < MAKE_CORE_RPC_VERSION(1, 4))
-    return true;
   std::string err;
   uint64_t blockchain_height = get_daemon_blockchain_height(err);
   if (!err.empty())

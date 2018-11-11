@@ -48,7 +48,6 @@
 #include "crypto/chacha.h"
 #include "ringct/rctTypes.h"
 
-
 #ifndef USE_DEVICE_LEDGER
 #define USE_DEVICE_LEDGER 1
 #endif
@@ -78,6 +77,7 @@ namespace hw {
                                     std::string(" (device.hpp line ")+std::to_string(__LINE__)+std::string(").")); \
            return false;
     }
+
 
     class device {
     protected:
