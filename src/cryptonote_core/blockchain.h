@@ -1,3 +1,4 @@
+// Copyright (c) 2018, The Unprll Project
 // Copyright (c) 2014-2018, The Monero Project
 //
 // All rights reserved.
@@ -45,6 +46,7 @@
 #include "string_tools.h"
 #include "cryptonote_basic/cryptonote_basic.h"
 #include "common/util.h"
+#include "cryptonote_protocol/cryptonote_protocol_handler_common.h"
 #include "cryptonote_protocol/cryptonote_protocol_defs.h"
 #include "rpc/core_rpc_server_commands_defs.h"
 #include "cryptonote_basic/difficulty.h"
@@ -120,7 +122,7 @@ namespace cryptonote
      *
      * @return true on success, false if any initialization steps fail
      */
-    bool init(BlockchainDB* db, const network_type nettype = MAINNET, bool offline = false, const cryptonote::test_options *test_options = NULL, difficulty_type fixed_difficulty = 0);
+    bool init(BlockchainDB* db, i_cryptonote_protocol* pprotocol, const network_type nettype = MAINNET, bool offline = false, const cryptonote::test_options *test_options = NULL, difficulty_type fixed_difficulty = 0);
 
     /**
      * @brief Initialize the Blockchain state
@@ -132,7 +134,7 @@ namespace cryptonote
      *
      * @return true on success, false if any initialization steps fail
      */
-    bool init(BlockchainDB* db, HardFork*& hf, const network_type nettype = MAINNET, bool offline = false);
+    bool init(BlockchainDB* db, HardFork*& hf, i_cryptonote_protocol* pprotocol, const network_type nettype = MAINNET, bool offline = false);
 
     /**
      * @brief Uninitializes the blockchain state
@@ -611,6 +613,11 @@ namespace cryptonote
      */
     uint64_t get_current_cumulative_block_weight_limit() const;
 
+    bool is_valid_checkpoint(cryptonote::block &blk, const uint64_t checkpoint);
+    bool check_miner_specific(const cryptonote::block& block);
+    bool check_proof_of_work(cryptonote::block block, crypto::hash& proof_of_work, difficulty_type current_diff, uint64_t height);
+    void notify_invalid_block(const crypto::hash& h, uint64_t checkpoint) const;
+
     /**
      * @brief gets the block weight median based on recent blocks (same window as for the limit)
      *
@@ -797,7 +804,7 @@ namespace cryptonote
      * @param earliest_height the earliest height at which <version> is allowed
      * @param voting which version this node is voting for/using
      *
-     * @return whether the version queried is enabled 
+     * @return whether the version queried is enabled
      */
     bool get_hard_fork_voting_info(uint8_t version, uint32_t &window, uint32_t &votes, uint32_t &threshold, uint64_t &earliest_height, uint8_t &voting) const;
 
@@ -973,6 +980,7 @@ namespace cryptonote
     BlockchainDB* m_db;
 
     tx_memory_pool& m_tx_pool;
+    i_cryptonote_protocol* m_pprotocol;
 
     mutable epee::critical_section m_blockchain_lock; // TODO: add here reader/writer lock
 
@@ -990,6 +998,9 @@ namespace cryptonote
     std::vector<crypto::hash> m_blocks_hash_of_hashes;
     std::vector<crypto::hash> m_blocks_hash_check;
     std::vector<crypto::hash> m_blocks_txs_check;
+
+    // Verification threads
+    std::list<boost::thread> m_threads;
 
     blockchain_db_sync_mode m_db_sync_mode;
     bool m_fast_sync;

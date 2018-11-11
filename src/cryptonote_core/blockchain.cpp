@@ -1,3 +1,4 @@
+// Copyright (c) 2018, The Unprll Project
 // Copyright (c) 2014-2018, The Monero Project
 //
 // All rights reserved.
@@ -302,7 +303,7 @@ uint64_t Blockchain::get_current_blockchain_height() const
 //------------------------------------------------------------------
 //FIXME: possibly move this into the constructor, to avoid accidentally
 //       dereferencing a null BlockchainDB pointer
-bool Blockchain::init(BlockchainDB* db, const network_type nettype, bool offline, const cryptonote::test_options *test_options, difficulty_type fixed_difficulty)
+bool Blockchain::init(BlockchainDB* db, i_cryptonote_protocol* pprotocol, const network_type nettype, bool offline, const cryptonote::test_options *test_options, difficulty_type fixed_difficulty)
 {
   LOG_PRINT_L3("Blockchain::" << __func__);
   CRITICAL_REGION_LOCAL(m_tx_pool);
@@ -367,7 +368,7 @@ bool Blockchain::init(BlockchainDB* db, const network_type nettype, bool offline
     MINFO("Blockchain not loaded, generating genesis block.");
     block bl = boost::value_initialized<block>();
     block_verification_context bvc = boost::value_initialized<block_verification_context>();
-    generate_genesis_block(bl, get_config(m_nettype).GENESIS_TX, get_config(m_nettype).GENESIS_NONCE);
+    generate_genesis_block(bl, get_config(m_nettype).GENESIS_TX);
     add_new_block(bl, bvc);
     CHECK_AND_ASSERT_MES(!bvc.m_verifivation_failed, false, "Failed to add genesis block to blockchain");
   }
@@ -402,6 +403,8 @@ bool Blockchain::init(BlockchainDB* db, const network_type nettype, bool offline
   if (m_nettype != FAKECHAIN)
     load_compiled_in_block_hashes();
 #endif
+
+  m_pprotocol = pprotocol;
 
   MINFO("Blockchain initialized. last block: " << m_db->height() - 1 << ", " << epee::misc_utils::get_time_interval_string(timestamp_diff) << " time ago, current difficulty: " << get_difficulty_for_next_block());
   m_db->block_txn_stop();
@@ -457,11 +460,11 @@ bool Blockchain::init(BlockchainDB* db, const network_type nettype, bool offline
   return true;
 }
 //------------------------------------------------------------------
-bool Blockchain::init(BlockchainDB* db, HardFork*& hf, const network_type nettype, bool offline)
+bool Blockchain::init(BlockchainDB* db, HardFork*& hf, i_cryptonote_protocol* pprotocol, const network_type nettype, bool offline)
 {
   if (hf != nullptr)
     m_hardfork = hf;
-  bool res = init(db, nettype, offline, NULL);
+  bool res = init(db, pprotocol, nettype, offline, NULL);
   if (hf == nullptr)
     hf = m_hardfork;
   return res;
@@ -1163,6 +1166,217 @@ uint64_t Blockchain::get_current_cumulative_block_weight_limit() const
   LOG_PRINT_L3("Blockchain::" << __func__);
   return m_current_block_cumul_weight_limit;
 }
+//-----------------------------------------------------------------------------------------------
+bool Blockchain::is_valid_checkpoint(cryptonote::block &blk, const uint64_t checkpoint)
+{
+    slow_hash_allocate_state();
+    crypto::hash checkpoint_start = blk.hash_checkpoints[checkpoint];
+    uint32_t i = 1;
+
+    crypto::hash blk_hash = cryptonote::get_block_hash(blk);
+    uint64_t height = m_db->get_block_height(blk_hash);
+    difficulty_type diff = m_db->get_block_difficulty(height);
+
+    std::list<block> empty;
+
+    while (i < std::min((blk.iterations - (checkpoint * config::HASH_CHECKPOINT_STEP)), config::HASH_CHECKPOINT_STEP)) {
+        if (check_hash(checkpoint_start, diff)) {
+            slow_hash_free_state();
+            rollback_blockchain_switching(empty, height);
+            return false;
+        }
+
+        // Perform next hash
+        cn_slow_hash(checkpoint_start.data, sizeof(checkpoint_start.data), checkpoint_start);
+
+        i += 1;
+    }
+
+    if (checkpoint_start != blk.hash_checkpoints[checkpoint + 1]) {
+        // Checkpoint doesn't match
+        slow_hash_free_state();
+        rollback_blockchain_switching(empty, height);
+        return false;
+    }
+
+    return true;
+}
+//------------------------------------------------------------------
+bool Blockchain::check_miner_specific(const cryptonote::block& block)
+{
+    // Get the miner tx pubkey
+    std::vector<tx_extra_field> tx_extra_fields;
+    if(!parse_tx_extra(block.miner_tx.extra, tx_extra_fields))
+    {
+      // Extra may only be partially parsed, it's OK if tx_extra_fields contains public key
+      LOG_PRINT_L0("Miner transaction extra has unsupported format");
+    }
+    tx_extra_pub_key pub_key_field;
+    if(!find_tx_extra_field_by_type(tx_extra_fields, pub_key_field, 0))
+    {
+      MERROR_VER("Public key wasn't found in the miner transaction extra");
+      return false;
+    }
+
+    // Generate view keys for truncated address
+    account_keys ack;
+    ack.m_account_address.m_spend_public_key = block.miner_specific;
+    keccak((uint8_t *)&ack.m_account_address.m_spend_public_key, sizeof(crypto::public_key), (uint8_t *)&ack.m_view_secret_key, sizeof(crypto::secret_key));
+    generate_keys(ack.m_account_address.m_view_public_key, ack.m_view_secret_key, ack.m_view_secret_key, true);
+
+    // Check if the miner tx is really sent to the truncated address as generated above
+    // This assumes that the miner tx pays one address
+    return is_out_to_acc(ack, boost::get<cryptonote::txout_to_key>(block.miner_tx.vout[0].target), pub_key_field.pub_key, std::vector<crypto::public_key>(), 0);
+}
+//------------------------------------------------------------------
+bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proof_of_work, difficulty_type current_diff, uint64_t height)
+{
+  if (height == 0) {
+      return true;
+  }
+  // 1. # of checkpoints (minus the first and last) must match iterations
+  if ((block.iterations / config::HASH_CHECKPOINT_STEP) != (block.hash_checkpoints.size() - 2)) {
+    MERROR_VER("Iteration mismatch");
+    return false;
+  }
+
+  // 2. The last hash must be valid
+  // TODO: Fix Genesis
+  if (height != 0 && !check_hash(block.hash_checkpoints.back(), current_diff)) {
+      MERROR_VER("Last hash mismatch");
+      return false;
+  }
+
+  // Allocate slow hash state
+  slow_hash_allocate_state();
+
+  // Copy hash_checkpoints and timestamp, and reset block to original state.
+  std::vector<crypto::hash> hash_checkpoints = block.hash_checkpoints;
+  uint64_t timestamp = block.timestamp;
+  uint32_t iterations = block.iterations;
+
+  block.hash_checkpoints.clear();
+  block.timestamp = 0;
+  block.iterations = 0;
+
+  // Run first iteration
+  blobdata bd = get_block_mining_blob(block);
+  cn_slow_hash(bd.data(), bd.size(), proof_of_work);
+
+  // 2. The first hash checkpoint must be valid
+  if (proof_of_work != hash_checkpoints[0]) {
+      MERROR_VER("First hash mismatch. Expected: " << hash_checkpoints[0] << ", got: " << proof_of_work);
+      return false;
+  }
+
+  // TODO FIXME Move all slow_hash_free_state calls into one place
+  if (iterations < config::HASH_CHECKPOINT_STEP) {
+      // Single threaded should work fine here
+      for (uint32_t i = 1; i <= iterations; i += 1) {
+          // If there's an earlier hash that is valid, invalidate block
+          if (check_hash(proof_of_work, current_diff)) {
+              slow_hash_free_state();
+              return false;
+          }
+
+          // If the current iteration is listed in checkpoints, check if the hash matches
+          if (i % config::HASH_CHECKPOINT_STEP == 0 && block.hash_checkpoints[(i / config::HASH_CHECKPOINT_STEP)] != proof_of_work) {
+              slow_hash_free_state();
+              return false;
+          }
+
+          // Perform next hash
+          cn_slow_hash(proof_of_work.data, sizeof(proof_of_work.data), proof_of_work);
+
+          block.iterations += 1;
+
+          if (i % config::HASH_CHECKPOINT_STEP == 0) {
+              block.hash_checkpoints.push_back(proof_of_work);
+          }
+      }
+
+      block.timestamp = timestamp;
+  } else {
+      // Multithread verification for (usually) faster performance
+
+      // Wait for any existing verifications to occur
+      for (auto &t : m_threads) {
+          t.join();
+      }
+      // Remove existing threads
+      m_threads.clear();
+
+      uint8_t threads_count = tools::get_max_concurrency();
+      boost::thread::attributes attrs;
+      attrs.set_stack_size(THREAD_STACK_SIZE);
+      crypto::hash blk_hash = cryptonote::get_block_hash(block);
+
+      // Start from a random position
+      uint64_t rand_start = crypto::rand<uint64_t>() % iterations;
+
+      for (uint32_t i = 0; i < threads_count; i += 1) {
+          m_threads.push_back(boost::thread(attrs, [this, rand_start, hash_checkpoints, threads_count, current_diff, iterations, i, height, blk_hash]() {
+              uint64_t pos = rand_start + i;
+              uint64_t checkpoints_verified = i;
+              while (pos < hash_checkpoints.size() && iterations > pos * config::HASH_CHECKPOINT_STEP) {
+                  crypto::hash h = hash_checkpoints[pos];
+
+                  for (uint64_t j = 0; j < std::min((iterations - (pos * config::HASH_CHECKPOINT_STEP)), config::HASH_CHECKPOINT_STEP); j += 1) {
+                      // If there's an earlier hash that is valid, invalidate block
+                      if (check_hash(h, current_diff)) {
+                          MERROR("[" << i << "] Premature valid hash");
+                          std::list<cryptonote::block> empty;
+                          rollback_blockchain_switching(empty, height);
+                          notify_invalid_block(blk_hash, pos);
+                          return;
+                      }
+                      cn_slow_hash(h.data, sizeof(h.data), h);
+                  }
+
+                  if (hash_checkpoints[pos + 1] != h) {
+                      MERROR("[" << i << "] Mismatched hash in checkpoint");
+                      std::list<cryptonote::block> empty;
+                      rollback_blockchain_switching(empty, height);
+                      notify_invalid_block(blk_hash, pos);
+                      return;
+                  }
+
+                  pos += threads_count;
+                  checkpoints_verified += threads_count;
+
+                  // Probabilistic verification
+                  if (h == hash_checkpoints.back() || double(checkpoints_verified) / hash_checkpoints.size() > config::BLOCK_VALID_THRESHOLD) {
+                      break;
+                  }
+              }
+              return;
+          }));
+      }
+
+      // NOTE: Verification will happen in the background, and remove
+      // the block if there was any invalid checkpoint
+
+      proof_of_work = hash_checkpoints.back();
+
+      block.timestamp = timestamp;
+      block.hash_checkpoints = hash_checkpoints;
+      block.iterations = iterations;
+
+      return true;
+  }
+}
+//-----------------------------------------------------------------------------------------------
+void Blockchain::notify_invalid_block(const crypto::hash& h, uint64_t checkpoint) const
+{
+    LOG_PRINT_L1("INVALID CHECKPOINT FOUND!");
+
+    cryptonote_connection_context exclude_context = boost::value_initialized<cryptonote_connection_context>();
+    NOTIFY_INVALID_BLOCK::request req = {
+        epee::string_tools::pod_to_hex(h),
+        checkpoint
+    };
+    m_pprotocol->relay_invalid_block(req, exclude_context);
+}
 //------------------------------------------------------------------
 uint64_t Blockchain::get_current_cumulative_block_weight_median() const
 {
@@ -1181,7 +1395,7 @@ uint64_t Blockchain::get_current_cumulative_block_weight_median() const
 // in a lot of places.  That flag is not referenced in any of the code
 // nor any of the makefiles, howeve.  Need to look into whether or not it's
 // necessary at all.
-bool Blockchain::create_block_template(block& b, const account_public_address& miner_address, difficulty_type& diffic, uint64_t& height, uint64_t& expected_reward, const blobdata& ex_nonce)
+bool Blockchain::create_block_template(block& b, const account_public_address& _miner_address, difficulty_type& diffic, uint64_t& height, uint64_t& expected_reward, const blobdata& ex_nonce)
 {
   LOG_PRINT_L3("Blockchain::" << __func__);
   size_t median_weight;
@@ -1195,7 +1409,7 @@ bool Blockchain::create_block_template(block& b, const account_public_address& m
     // just as we compare it, we'll just use a slightly old template, but
     // this would be the case anyway if we'd lock, and the change happened
     // just after the block template was created
-    if (!memcmp(&miner_address, &m_btc_address, sizeof(cryptonote::account_public_address)) && m_btc_nonce == ex_nonce && m_btc_pool_cookie == m_tx_pool.cookie()) {
+    if (!memcmp(&_miner_address, &m_btc_address, sizeof(cryptonote::account_public_address)) && m_btc_nonce == ex_nonce && m_btc_pool_cookie == m_tx_pool.cookie()) {
       MDEBUG("Using cached template");
       m_btc.timestamp = time(NULL); // update timestamp unconditionally
       b = m_btc;
@@ -1203,14 +1417,17 @@ bool Blockchain::create_block_template(block& b, const account_public_address& m
       expected_reward = m_btc_expected_reward;
       return true;
     }
-    MDEBUG("Not using cached template: address " << (!memcmp(&miner_address, &m_btc_address, sizeof(cryptonote::account_public_address))) << ", nonce " << (m_btc_nonce == ex_nonce) << ", cookie " << (m_btc_pool_cookie == m_tx_pool.cookie()));
+    MDEBUG("Not using cached template: address " << (!memcmp(&_miner_address, &m_btc_address, sizeof(cryptonote::account_public_address))) << ", nonce " << (m_btc_nonce == ex_nonce) << ", cookie " << (m_btc_pool_cookie == m_tx_pool.cookie()));
     invalidate_block_template_cache();
   }
 
   b.major_version = m_hardfork->get_current_version();
   b.minor_version = m_hardfork->get_ideal_version();
   b.prev_id = get_tail_id();
+  b.miner_specific = _miner_address.m_spend_public_key;
   b.timestamp = time(NULL);
+  b.iterations = 0;
+  b.hash_checkpoints = std::vector<crypto::hash>();
 
   uint64_t median_ts;
   if (!check_block_timestamp(b, median_ts))
@@ -1287,6 +1504,13 @@ bool Blockchain::create_block_template(block& b, const account_public_address& m
       ", transaction weight " << txs_weight <<
       ", fee " << fee);
 #endif
+
+  // Copy the miner address for generating the truncated miner address
+  account_public_address miner_address = _miner_address;
+  // Generate view keys for truncated address
+  crypto::secret_key truncated_view_secret;
+  keccak((uint8_t *)&miner_address.m_spend_public_key, sizeof(crypto::public_key), (uint8_t *)&truncated_view_secret, sizeof(crypto::secret_key));
+  generate_keys(miner_address.m_view_public_key, truncated_view_secret, truncated_view_secret, true);
 
   /*
    two-phase miner transaction generation: we don't know exact block weight until we prepare block, but we don't know reward until we know
@@ -1485,12 +1709,18 @@ bool Blockchain::handle_alternative_block(const block& b, const crypto::hash& id
       return false;
     }
 
+    if(!check_miner_specific(bei.bl))
+    {
+      MERROR_VER("Block with id: " << id << "for alternative chain, has incorrect miner transaction");
+      bvc.m_verifivation_failed = true;
+      return false;
+    }
+
     // Check the block's hash against the difficulty target for its alt chain
     difficulty_type current_diff = get_next_difficulty_for_alternative_chain(alt_chain, bei);
     CHECK_AND_ASSERT_MES(current_diff, false, "!!!!!!! DIFFICULTY OVERHEAD !!!!!!!");
     crypto::hash proof_of_work = null_hash;
-    get_block_longhash(bei.bl, proof_of_work, bei.height);
-    if(!check_hash(proof_of_work, current_diff))
+    if(!check_proof_of_work(bei.bl, proof_of_work, current_diff, bei.height))
     {
       MERROR_VER("Block with id: " << id << std::endl << " for alternative chain, does not have enough proof of work: " << proof_of_work << std::endl << " expected difficulty: " << current_diff);
       bvc.m_verifivation_failed = true;
@@ -3217,6 +3447,14 @@ leave:
     goto leave;
   }
 
+  // Genesis doesn't have a proper key, unfortunately
+  if(boost::get<cryptonote::txin_gen>(bl.miner_tx.vin[0]).height != 0 && !check_miner_specific(bl))
+  {
+    MERROR_VER("Block with id: " << id << " has incorrect miner transaction");
+    bvc.m_verifivation_failed = true;
+    return false;
+  }
+
   TIME_MEASURE_FINISH(t2);
   //check proof of work
   TIME_MEASURE_START(target_calculating_time);
@@ -3276,14 +3514,13 @@ leave:
       proof_of_work = it->second;
     }
     else
-      proof_of_work = get_block_longhash(bl, m_db->height());
+      proof_of_work = null_hash;
 
     // validate proof_of_work versus difficulty target
-    if(!check_hash(proof_of_work, current_diffic))
-    {
-      MERROR_VER("Block with id: " << id << std::endl << "does not have enough proof of work: " << proof_of_work << std::endl << "unexpected difficulty: " << current_diffic);
-      bvc.m_verifivation_failed = true;
-      goto leave;
+    if (!check_proof_of_work(bl, proof_of_work, current_diffic, m_db->height())) {
+        MERROR_VER("Block with id: " << id << std::endl << "does not have enough proof of work: " << proof_of_work << std::endl << "unexpected difficulty: " << current_diffic);
+        bvc.m_verifivation_failed = true;
+        goto leave;
     }
   }
 
@@ -3823,11 +4060,12 @@ uint64_t Blockchain::prevalidate_block_hashes(uint64_t height, const std::vector
       bool valid = hash == m_blocks_hash_of_hashes[n];
 
       // add to the known hashes array
-      if (!valid)
-      {
-        MDEBUG("invalid hash for blocks " << n * HASH_OF_HASHES_STEP << " - " << (n * HASH_OF_HASHES_STEP + HASH_OF_HASHES_STEP - 1));
-        break;
-      }
+      // TODO FIXME
+      // if (!valid)
+      // {
+      //   MWARNING("invalid hash for blocks " << n * HASH_OF_HASHES_STEP << " - " << (n * HASH_OF_HASHES_STEP + HASH_OF_HASHES_STEP - 1));
+      //   break;
+      // }
 
       size_t end = n * HASH_OF_HASHES_STEP + HASH_OF_HASHES_STEP;
       for (size_t i = n * HASH_OF_HASHES_STEP; i < end; ++i)
@@ -4501,7 +4739,6 @@ void Blockchain::cache_block_template(const block &b, const cryptonote::account_
   MDEBUG("Setting block template cache");
   m_btc = b;
   m_btc_address = address;
-  m_btc_nonce = nonce;
   m_btc_difficulty = diff;
   m_btc_expected_reward = expected_reward;
   m_btc_pool_cookie = pool_cookie;

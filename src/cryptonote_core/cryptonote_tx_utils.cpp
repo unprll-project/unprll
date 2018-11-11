@@ -640,7 +640,6 @@ namespace cryptonote
   bool generate_genesis_block(
       block& bl
     , std::string const & genesis_tx
-    , uint32_t nonce
     )
   {
     //genesis block
@@ -654,8 +653,13 @@ namespace cryptonote
     bl.major_version = CURRENT_BLOCK_MAJOR_VERSION;
     bl.minor_version = CURRENT_BLOCK_MINOR_VERSION;
     bl.timestamp = 0;
-    bl.nonce = nonce;
-    miner::find_nonce_for_given_block(bl, 1, 0);
+    bl.iterations = 0;
+    bl.hash_checkpoints = std::vector<crypto::hash>();
+    crypto::hash hash;
+    epee::string_tools::hex_to_pod("300b14ee2d3be2c7aeca62a4bc240ea2e7d64d5f09fc0d6589a22279217dd460", hash);
+    bl.hash_checkpoints.push_back(hash);
+    bl.hash_checkpoints.push_back(hash);
+
     bl.invalidate_hashes();
     return true;
   }

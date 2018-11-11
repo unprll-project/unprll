@@ -1,3 +1,4 @@
+// Copyright (c) 2018, The Unprll Project
 // Copyright (c) 2014-2018, The Monero Project
 //
 // All rights reserved.
@@ -567,7 +568,7 @@ namespace cryptonote
       regtest_hard_forks
     };
     const difficulty_type fixed_difficulty = command_line::get_arg(vm, arg_fixed_difficulty);
-    r = m_blockchain_storage.init(db.release(), m_nettype, m_offline, regtest ? &regtest_test_options : test_options, fixed_difficulty);
+    r = m_blockchain_storage.init(db.release(), m_pprotocol, m_nettype, m_offline, regtest ? &regtest_test_options : test_options, fixed_difficulty);
 
     r = m_mempool.init(max_txpool_weight);
     CHECK_AND_ASSERT_MES(r, false, "Failed to initialize memory pool");
@@ -1456,6 +1457,11 @@ namespace cryptonote
   bool core::get_block_by_hash(const crypto::hash &h, block &blk, bool *orphan) const
   {
     return m_blockchain_storage.get_block_by_hash(h, blk, orphan);
+  }
+  //-----------------------------------------------------------------------------------------------
+  bool core::is_valid_checkpoint(block &blk, uint64_t checkpoint)
+  {
+    return m_blockchain_storage.is_valid_checkpoint(blk, checkpoint);
   }
   //-----------------------------------------------------------------------------------------------
   std::string core::print_pool(bool short_format) const

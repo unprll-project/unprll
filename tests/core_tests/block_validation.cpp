@@ -165,7 +165,7 @@ bool gen_block_invalid_prev_id::check_block_verification_context(const cryptonot
     return !bvc.m_marked_as_orphaned && bvc.m_added_to_main_chain && !bvc.m_verifivation_failed;
 }
 
-bool gen_block_invalid_nonce::generate(std::vector<test_event_entry>& events) const
+bool gen_block_invalid_miner_specific::generate(std::vector<test_event_entry>& events) const
 {
   BLOCK_VALIDATION_INIT_GENERATE();
 
@@ -174,22 +174,71 @@ bool gen_block_invalid_nonce::generate(std::vector<test_event_entry>& events) co
   if (!lift_up_difficulty(events, timestamps, commulative_difficulties, generator, 2, blk_0, miner_account))
     return false;
 
-  // Create invalid nonce
-  difficulty_type diffic = next_difficulty(timestamps, commulative_difficulties,DIFFICULTY_TARGET_V1);
+  // Create invalid miner_specific
+  difficulty_type diffic = next_difficulty(timestamps, commulative_difficulties,DIFFICULTY_TARGET);
   assert(1 < diffic);
   const block& blk_last = boost::get<block>(events.back());
   uint64_t timestamp = blk_last.timestamp;
   block blk_3;
-  do
-  {
-    ++timestamp;
-    blk_3.miner_tx.set_null();
-    if (!generator.construct_block_manually(blk_3, blk_last, miner_account,
-      test_generator::bf_diffic | test_generator::bf_timestamp, 0, 0, timestamp, crypto::hash(), diffic))
-      return false;
-  }
-  while (0 == blk_3.nonce);
-  --blk_3.nonce;
+
+  if (!generator.construct_block_manually(blk_3, blk_last, miner_account,
+    test_generator::bf_diffic | test_generator::bf_timestamp, 0, 0, timestamp, crypto::hash(), diffic))
+    return false;
+
+  --blk_3.miner_specific.data[0];
+  events.push_back(blk_3);
+
+  return true;
+}
+
+bool gen_block_invalid_iterations::generate(std::vector<test_event_entry>& events) const
+{
+  BLOCK_VALIDATION_INIT_GENERATE();
+
+  std::vector<uint64_t> timestamps;
+  std::vector<difficulty_type> commulative_difficulties;
+  if (!lift_up_difficulty(events, timestamps, commulative_difficulties, generator, 2, blk_0, miner_account))
+    return false;
+
+  difficulty_type diffic = next_difficulty(timestamps, commulative_difficulties,DIFFICULTY_TARGET);
+  assert(1 < diffic);
+  const block& blk_last = boost::get<block>(events.back());
+  uint64_t timestamp = blk_last.timestamp;
+  block blk_3;
+
+  if (!generator.construct_block_manually(blk_3, blk_last, miner_account,
+    test_generator::bf_diffic | test_generator::bf_timestamp, 0, 0, timestamp, crypto::hash(), diffic))
+    return false;
+
+  // Adjust iterations
+  --blk_3.iterations;
+  events.push_back(blk_3);
+
+  return true;
+}
+
+bool gen_block_invalid_hash_checkpoint::generate(std::vector<test_event_entry>& events) const
+{
+  BLOCK_VALIDATION_INIT_GENERATE();
+
+  std::vector<uint64_t> timestamps;
+  std::vector<difficulty_type> commulative_difficulties;
+  if (!lift_up_difficulty(events, timestamps, commulative_difficulties, generator, 2, blk_0, miner_account))
+    return false;
+
+  difficulty_type diffic = next_difficulty(timestamps, commulative_difficulties,DIFFICULTY_TARGET);
+  assert(1 < diffic);
+  const block& blk_last = boost::get<block>(events.back());
+  uint64_t timestamp = blk_last.timestamp;
+  block blk_3;
+
+  if (!generator.construct_block_manually(blk_3, blk_last, miner_account,
+    test_generator::bf_diffic | test_generator::bf_timestamp, 0, 0, timestamp, crypto::hash(), diffic))
+    return false;
+
+  // Adjust one hash
+  --blk_3.hash_checkpoints[1].data[0];
+
   events.push_back(blk_3);
 
   return true;

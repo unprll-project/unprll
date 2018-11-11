@@ -2332,6 +2332,10 @@ simple_wallet::simple_wallet()
                            boost::bind(&simple_wallet::sweep_single, this, _1),
                            tr("sweep_single [<priority>] [<ring_size>] [outputs=<N>] <key_image> <address> [<payment_id>]"),
                            tr("Send a single output of the given key image to an address without change."));
+  m_cmd_binder.set_handler("sweep_mined",
+                          boost::bind(&simple_wallet::sweep_mined, this, _1),
+                          tr("sweep_mined"),
+                          tr("Sweep mined coins back to main address."));
   m_cmd_binder.set_handler("donate",
                            boost::bind(&simple_wallet::donate, this, _1),
                            tr("donate [index=<N1>[,<N2>,...]] [<priority>] [<ring_size>] <amount> [<payment_id>]"),
@@ -3630,7 +3634,7 @@ boost::optional<epee::wipeable_string> simple_wallet::new_wallet(const boost::pr
   {
     recovery_val = m_wallet->generate(m_wallet_file, std::move(rc.second).password(), recovery_key, recover, two_random, create_address_file);
     message_writer(console_color_white, true) << tr("Generated new wallet: ")
-      << m_wallet->get_account().get_public_address_str(m_wallet->nettype());
+      << m_wallet->get_account().get_public_address_str(m_wallet->nettype()).substr(0, 6);
     PAUSE_READLINE();
     std::cout << tr("View key: ");
     print_secret_key(m_wallet->get_account().get_keys().m_view_secret_key);
@@ -3702,7 +3706,7 @@ boost::optional<epee::wipeable_string> simple_wallet::new_wallet(const boost::pr
       m_wallet->generate(m_wallet_file, std::move(rc.second).password(), address, viewkey, create_address_file);
     }
     message_writer(console_color_white, true) << tr("Generated new wallet: ")
-      << m_wallet->get_account().get_public_address_str(m_wallet->nettype());
+      << m_wallet->get_account().get_public_address_str(m_wallet->nettype()).substr(0, 6);
   }
   catch (const std::exception& e)
   {
@@ -3741,7 +3745,7 @@ boost::optional<epee::wipeable_string> simple_wallet::new_wallet(const boost::pr
     bool create_address_file = command_line::get_arg(vm, arg_create_address_file);
     m_wallet->restore(m_wallet_file, std::move(rc.second).password(), device_desc.empty() ? "Ledger" : device_desc, create_address_file);
     message_writer(console_color_white, true) << tr("Generated new wallet on hw device: ")
-      << m_wallet->get_account().get_public_address_str(m_wallet->nettype());
+      << m_wallet->get_account().get_public_address_str(m_wallet->nettype()).substr(0, 6);
   }
   catch (const std::exception& e)
   {
@@ -3844,7 +3848,7 @@ bool simple_wallet::open_wallet(const boost::program_options::variables_map& vm)
     else
       prefix = tr("Opened wallet");
     message_writer(console_color_white, true) <<
-      prefix << ": " << m_wallet->get_account().get_public_address_str(m_wallet->nettype());
+      prefix << ": " << m_wallet->get_wallet_file() << " (" << m_wallet->get_account().get_public_address_str(m_wallet->nettype()).substr(0, 6) << ")";
     if (m_wallet->get_account().get_device()) {
        message_writer(console_color_white, true) << "Wallet is on device: " << m_wallet->get_account().get_device().get_name();
     }
@@ -4002,6 +4006,23 @@ bool simple_wallet::start_mining(const std::vector<std::string>& args)
     fail_msg_writer() << tr("wallet is null");
     return true;
   }
+
+  tools::msg_writer(console_color_yellow)
+    << tr("WARNING: Mining exposes your public spend key, leading to linkability of transactions if not careful.")
+    << std::endl
+    << tr("1) Never use your Mining account address for receiving coins.")
+    << std::endl
+    << tr("2) Do not send coins from the Mining account to any wallet you don't have control over. Sweeping your coins to the Primary account (after running sweep_mined) is recommended.");
+
+  std::string accepted = input_line("Is this okay? (Y/Yes/N/No): ");
+  if (std::cin.eof())
+    return true;
+  if (!command_line::is_yes(accepted))
+  {
+    fail_msg_writer() << tr("Mining cancelled.");
+    return true;
+  }
+
   COMMAND_RPC_START_MINING::request req = AUTO_VAL_INIT(req);
   req.miner_address = m_wallet->get_account().get_public_address_str(m_wallet->nettype());
 
@@ -5160,7 +5181,97 @@ bool simple_wallet::locked_sweep_all(const std::vector<std::string> &args_)
   return sweep_main(0, true, args_);
 }
 //----------------------------------------------------------------------------------------------------
+bool simple_wallet::sweep_mined(const std::vector<std::string> &args_)
+{
+    if (!try_connect_to_daemon())
+      return true;
 
+    SCOPED_WALLET_UNLOCK();
+    try
+    {
+      // figure out what tx will be necessary
+      auto ptx_vector = m_wallet->create_mined_sweep_transactions();
+
+      if (ptx_vector.empty())
+      {
+        fail_msg_writer() << tr("No unsweeped outputs found");
+        return true;
+      }
+
+      // give user total and fee, and prompt to confirm
+      uint64_t total_fee = 0, total_unsweeped = 0;
+      for (size_t n = 0; n < ptx_vector.size(); ++n)
+      {
+        total_fee += ptx_vector[n].fee;
+        for (auto i: ptx_vector[n].selected_transfers)
+          total_unsweeped += m_wallet->get_transfer_details(i).amount();
+      }
+
+      std::string prompt_str = tr("Sweeping ") + print_money(total_unsweeped);
+      if (ptx_vector.size() > 1) {
+        prompt_str = (boost::format(tr("Sweeping %s in %llu transactions for a total fee of %s.  Is this okay?  (Y/Yes/N/No): ")) %
+          print_money(total_unsweeped) %
+          ((unsigned long long)ptx_vector.size()) %
+          print_money(total_fee)).str();
+      }
+      else {
+        prompt_str = (boost::format(tr("Sweeping %s for a total fee of %s.  Is this okay?  (Y/Yes/N/No): ")) %
+          print_money(total_unsweeped) %
+          print_money(total_fee)).str();
+      }
+      std::string accepted = input_line(prompt_str);
+      if (std::cin.eof())
+        return true;
+      if (!command_line::is_yes(accepted))
+      {
+        fail_msg_writer() << tr("transaction cancelled.");
+
+        return true;
+      }
+
+      // actually commit the transactions
+      if (m_wallet->multisig())
+      {
+        bool r = m_wallet->save_multisig_tx(ptx_vector, "multisig_unprll_tx");
+        if (!r)
+        {
+          fail_msg_writer() << tr("Failed to write transaction(s) to file");
+        }
+        else
+        {
+          success_msg_writer(true) << tr("Unsigned transaction(s) successfully written to file: ") << "multisig_unprll_tx";
+        }
+      }
+      else if (m_wallet->watch_only())
+      {
+        bool r = m_wallet->save_tx(ptx_vector, "unsigned_unprll_tx");
+        if (!r)
+        {
+          fail_msg_writer() << tr("Failed to write transaction(s) to file");
+        }
+        else
+        {
+          success_msg_writer(true) << tr("Unsigned transaction(s) successfully written to file: ") << "unsigned_unprll_tx";
+        }
+      }
+      else
+      {
+        commit_or_save(ptx_vector, m_do_not_relay);
+      }
+    }
+    catch (const std::exception &e)
+    {
+      handle_transfer_exception(std::current_exception(), m_wallet->is_trusted_daemon());
+    }
+    catch (...)
+    {
+      LOG_ERROR("unknown error");
+      fail_msg_writer() << tr("unknown error");
+    }
+
+    return true;
+}
+//----------------------------------------------------------------------------------------------------
 bool simple_wallet::sweep_unmixable(const std::vector<std::string> &args_)
 {
   if (!try_connect_to_daemon())
@@ -7294,11 +7405,37 @@ bool simple_wallet::print_address(const std::vector<std::string> &args/* = std::
   uint32_t index = 0;
   if (local_args.empty())
   {
+    if (m_current_subaddress_account == 0 && index == 0) {
+        tools::msg_writer(console_color_yellow)
+            << tr("WARNING: Exposing your Mining Address will lead to linking of transactions and loss of privacy")
+            << std::endl
+            << tr("Use your primary account or other subaddresses for receiving coins.");
+
+        std::string accepted = input_line("Is this okay? (Y/Yes/N/No): ");
+        if (std::cin.eof())
+            return true;
+        if (!command_line::is_yes(accepted)) {
+            return true;
+        }
+    }
+
     print_address_sub(index);
   }
   else if (local_args.size() == 1 && local_args[0] == "all")
   {
     local_args.erase(local_args.begin());
+    tools::msg_writer(console_color_yellow)
+        << tr("WARNING: Exposing your Mining Address will lead to linking of transactions and loss of privacy")
+        << std::endl
+        << tr("Use your primary account or other subaddresses for receiving coins.");
+
+    std::string accepted = input_line("Is this okay? (Y/Yes/N/No): ");
+    if (std::cin.eof())
+        return true;
+    if (!command_line::is_yes(accepted)) {
+        return true;
+    }
+
     for (; index < m_wallet->get_num_subaddresses(m_current_subaddress_account); ++index)
       print_address_sub(index);
   }
@@ -7325,6 +7462,21 @@ bool simple_wallet::print_address(const std::vector<std::string> &args/* = std::
       fail_msg_writer() << tr("specify an index between 0 and ") << (m_wallet->get_num_subaddresses(m_current_subaddress_account) - 1);
       return true;
     }
+
+    if (m_current_subaddress_account == 0 && index == 0) {
+        tools::msg_writer(console_color_yellow)
+            << tr("WARNING: Exposing your Mining Address will lead to linking of transactions and loss of privacy")
+            << std::endl
+            << tr("Use your primary account or other subaddresses for receiving coins.");
+
+        std::string accepted = input_line("Is this okay? (Y/Yes/N/No): ");
+        if (std::cin.eof())
+            return true;
+        if (!command_line::is_yes(accepted)) {
+            return true;
+        }
+    }
+
     local_args.erase(local_args.begin());
     local_args.erase(local_args.begin());
     std::string label = boost::join(local_args, " ");
@@ -7356,6 +7508,19 @@ bool simple_wallet::print_address(const std::vector<std::string> &args/* = std::
     {
       message_writer() << tr("<index_max> exceeds the bound");
       index_max = m_wallet->get_num_subaddresses(m_current_subaddress_account) - 1;
+    }
+    if (m_current_subaddress_account == 0 && index_min == 0) {
+        tools::msg_writer(console_color_yellow)
+            << tr("WARNING: Exposing your Mining Address will lead to linking of transactions and loss of privacy")
+            << std::endl
+            << tr("Use your primary account or other subaddresses for receiving coins.");
+
+        std::string accepted = input_line("Is this okay? (Y/Yes/N/No): ");
+        if (std::cin.eof())
+            return true;
+        if (!command_line::is_yes(accepted)) {
+            return true;
+        }
     }
     for (index = index_min; index <= index_max; ++index)
       print_address_sub(index);

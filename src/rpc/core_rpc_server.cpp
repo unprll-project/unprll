@@ -1,21 +1,22 @@
+// Copyright (c) 2018, The Unprll Project
 // Copyright (c) 2014-2018, The Monero Project
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without modification, are
 // permitted provided that the following conditions are met:
-// 
+//
 // 1. Redistributions of source code must retain the above copyright notice, this list of
 //    conditions and the following disclaimer.
-// 
+//
 // 2. Redistributions in binary form must reproduce the above copyright notice, this list
 //    of conditions and the following disclaimer in the documentation and/or other
 //    materials provided with the distribution.
-// 
+//
 // 3. Neither the name of the copyright holder nor the names of its contributors may be
 //    used to endorse or promote products derived from this software without specific
 //    prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 // MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
@@ -25,7 +26,7 @@
 // INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//
 // Parts of this file are originally copyright (c) 2012-2013 The Cryptonote developers
 
 #include "include_base_utils.h"
@@ -764,7 +765,7 @@ namespace cryptonote
     }
     if (info.is_subaddress)
     {
-      res.status = "Mining to subaddress isn't supported yet";
+      res.status = "Mining to subaddress isn't supported";
       LOG_PRINT_L0(res.status);
       return true;
     }
@@ -825,7 +826,7 @@ namespace cryptonote
     const miner& lMiner = m_core.get_miner();
     res.active = lMiner.is_mining();
     res.is_background_mining_enabled = lMiner.get_is_background_mining_enabled();
-    
+
     if ( lMiner.is_mining() ) {
       res.speed = lMiner.get_speed();
       res.threads_count = lMiner.get_threads_count();
@@ -1072,7 +1073,7 @@ namespace cryptonote
     if (info.is_subaddress)
     {
       error_resp.code = CORE_RPC_ERROR_CODE_MINING_TO_SUBADDRESS;
-      error_resp.message = "Mining to subaddress is not supported yet";
+      error_resp.message = "Mining to subaddress is not supported";
       return false;
     }
 
@@ -1111,10 +1112,10 @@ namespace cryptonote
       LOG_ERROR("Failed to calculate offset for ");
       return false;
     }
-    blobdata hashing_blob = get_block_hashing_blob(b);
+    blobdata mining_blob = get_block_mining_blob(b);
     res.prev_hash = string_tools::pod_to_hex(b.prev_id);
     res.blocktemplate_blob = string_tools::buff_to_hex_nodelimer(block_blob);
-    res.blockhashing_blob =  string_tools::buff_to_hex_nodelimer(hashing_blob);
+    res.blockmining_blob =  string_tools::buff_to_hex_nodelimer(mining_blob);
     res.status = CORE_RPC_STATUS_OK;
     return true;
   }
@@ -1144,7 +1145,7 @@ namespace cryptonote
       error_resp.message = "Wrong block blob";
       return false;
     }
-    
+
     // Fixing of high orphan issue for most pools
     // Thanks Boolberry!
     block b = AUTO_VAL_INIT(b);
@@ -1160,7 +1161,7 @@ namespace cryptonote
     if(!m_core.check_incoming_block_size(blockblob))
     {
       error_resp.code = CORE_RPC_ERROR_CODE_WRONG_BLOCKBLOB_SIZE;
-      error_resp.message = "Block bloc size is too big, rejecting block";
+      error_resp.message = "Block blob size is too big, rejecting block";
       return false;
     }
 
@@ -1179,13 +1180,13 @@ namespace cryptonote
     PERF_TIMER(on_generateblocks);
 
     CHECK_CORE_READY();
-    
+
     res.status = CORE_RPC_STATUS_OK;
 
     if(m_core.get_nettype() != FAKECHAIN)
     {
       error_resp.code = CORE_RPC_ERROR_CODE_REGTEST_REQUIRED;
-      error_resp.message = "Regtest required when generating blocks";      
+      error_resp.message = "Regtest required when generating blocks";
       return false;
     }
 
@@ -1205,7 +1206,7 @@ namespace cryptonote
     {
       r = on_getblocktemplate(template_req, template_res, error_resp);
       res.status = template_res.status;
-      
+
       if (!r) return false;
 
       blobdata blockblob;
@@ -1222,7 +1223,8 @@ namespace cryptonote
         error_resp.message = "Wrong block blob";
         return false;
       }
-      miner::find_nonce_for_given_block(b, template_res.difficulty, template_res.height);
+      // TODO?
+      // miner::find_nonce_for_given_block(b, template_res.difficulty, template_res.height);
 
       submit_req.front() = string_tools::buff_to_hex_nodelimer(block_to_blob(b));
       r = on_submitblock(submit_req, submit_res, error_resp);
@@ -1253,7 +1255,12 @@ namespace cryptonote
     response.minor_version = blk.minor_version;
     response.timestamp = blk.timestamp;
     response.prev_hash = string_tools::pod_to_hex(blk.prev_id);
-    response.nonce = blk.nonce;
+    response.miner_specific = string_tools::pod_to_hex(blk.miner_specific);
+    response.iterations = blk.iterations;
+    for (size_t n = 0; n < blk.hash_checkpoints.size(); ++n)
+    {
+      response.hash_checkpoints.push_back(epee::string_tools::pod_to_hex(blk.hash_checkpoints[n]));
+    }
     response.orphan_status = orphan_status;
     response.height = height;
     response.depth = m_core.get_current_blockchain_height() - height - 1;
@@ -1579,7 +1586,7 @@ namespace cryptonote
     res.top_block_hash = string_tools::pod_to_hex(top_hash);
     res.target_height = m_core.get_target_blockchain_height();
     res.difficulty = m_core.get_blockchain_storage().get_difficulty_for_next_block();
-    res.target = m_core.get_blockchain_storage().get_current_hard_fork_version() < 2 ? DIFFICULTY_TARGET_V1 : DIFFICULTY_TARGET_V2;
+    res.target = DIFFICULTY_TARGET;
     res.tx_count = m_core.get_blockchain_storage().get_total_transactions() - res.height; //without coinbase
     res.tx_pool_size = m_core.get_pool_transactions_count();
     res.alt_blocks_count = m_core.get_blockchain_storage().get_alternative_blocks_count();
@@ -2044,6 +2051,8 @@ namespace cryptonote
       {
         cryptonote_connection_context fake_context = AUTO_VAL_INIT(fake_context);
         NOTIFY_NEW_TRANSACTIONS::request r;
+        // Dandelion by default to err on the side of caution
+        r.dandelion = true;
         r.txs.push_back(txblob);
         m_core.get_protocol()->relay_transactions(r, fake_context);
         //TODO: make sure that tx has reached other nodes here, probably wait to receive reflections from other nodes

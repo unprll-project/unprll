@@ -1,3 +1,4 @@
+// Copyright (c) 2018, The Unprll Project
 // Copyright (c) 2014-2018, The Monero Project
 // 
 // All rights reserved.
@@ -1053,7 +1054,7 @@ namespace cryptonote
       uint64_t expected_reward;
       std::string prev_hash;
       blobdata blocktemplate_blob;
-      blobdata blockhashing_blob;
+      blobdata blockmining_blob;
       std::string status;
       bool untrusted;
 
@@ -1064,7 +1065,7 @@ namespace cryptonote
         KV_SERIALIZE(expected_reward)
         KV_SERIALIZE(prev_hash)
         KV_SERIALIZE(blocktemplate_blob)
-        KV_SERIALIZE(blockhashing_blob)
+        KV_SERIALIZE(blockmining_blob)
         KV_SERIALIZE(status)
         KV_SERIALIZE(untrusted)
       END_KV_SERIALIZE_MAP()
@@ -1116,7 +1117,8 @@ namespace cryptonote
       uint8_t minor_version;
       uint64_t timestamp;
       std::string prev_hash;
-      uint32_t nonce;
+      std::string miner_specific;
+      uint32_t iterations;
       bool orphan_status;
       uint64_t height;
       uint64_t depth;
@@ -1127,14 +1129,16 @@ namespace cryptonote
       uint64_t block_size;
       uint64_t block_weight;
       uint64_t num_txes;
+      std::vector<std::string> hash_checkpoints;
       std::string pow_hash;
-      
+
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(major_version)
         KV_SERIALIZE(minor_version)
         KV_SERIALIZE(timestamp)
         KV_SERIALIZE(prev_hash)
-        KV_SERIALIZE(nonce)
+        KV_SERIALIZE(miner_specific)
+        KV_SERIALIZE(iterations)
         KV_SERIALIZE(orphan_status)
         KV_SERIALIZE(height)
         KV_SERIALIZE(depth)
@@ -1145,6 +1149,7 @@ namespace cryptonote
         KV_SERIALIZE(block_size)
         KV_SERIALIZE_OPT(block_weight, (uint64_t)0)
         KV_SERIALIZE(num_txes)
+        KV_SERIALIZE(hash_checkpoints)
         KV_SERIALIZE(pow_hash)
       END_KV_SERIALIZE_MAP()
   };
@@ -1165,7 +1170,7 @@ namespace cryptonote
       std::string status;
       block_header_response block_header;
       bool untrusted;
-      
+
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(block_header)
         KV_SERIALIZE(status)
@@ -1174,7 +1179,7 @@ namespace cryptonote
     };
 
   };
-  
+
   struct COMMAND_RPC_GET_BLOCK_HEADER_BY_HASH
   {
     struct request
@@ -1193,7 +1198,7 @@ namespace cryptonote
       std::string status;
       block_header_response block_header;
       bool untrusted;
-      
+
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(block_header)
         KV_SERIALIZE(status)
@@ -1221,7 +1226,7 @@ namespace cryptonote
       std::string status;
       block_header_response block_header;
       bool untrusted;
-      
+
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(block_header)
         KV_SERIALIZE(status)
@@ -1255,7 +1260,7 @@ namespace cryptonote
       std::string blob;
       std::string json;
       bool untrusted;
-      
+
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(block_header)
         KV_SERIALIZE(miner_tx_hash)

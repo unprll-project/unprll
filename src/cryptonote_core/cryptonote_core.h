@@ -154,6 +154,11 @@ namespace cryptonote
      bool handle_incoming_block(const blobdata& block_blob, block_verification_context& bvc, bool update_miner_blocktemplate = true);
 
      /**
+      * @brief Sends the NOTIFY_INVALID_BLOCK message to the network
+      */
+     void notify_invalid_block(crypto::hash& h, uint64_t checkpoint) const;
+
+     /**
       * @copydoc Blockchain::prepare_handle_incoming_blocks
       *
       * @note see Blockchain::prepare_handle_incoming_blocks
@@ -166,7 +171,7 @@ namespace cryptonote
       * @note see Blockchain::cleanup_handle_incoming_blocks
       */
      bool cleanup_handle_incoming_blocks(bool force_sync = false);
-     	     	
+
      /**
       * @brief check the size of a block against the current maximum
       *
@@ -370,6 +375,13 @@ namespace cryptonote
      bool get_block_by_hash(const crypto::hash &h, block &blk, bool *orphan = NULL) const;
 
      /**
+      * @copydoc Blockchain::is_valid_checkpoint
+      *
+      * @note see Blockchain::is_valid_checkpoint
+      */
+     bool is_valid_checkpoint(block &blk, const uint64_t checkpoint);
+
+     /**
       * @copydoc Blockchain::get_alternative_blocks
       *
       * @note see Blockchain::get_alternative_blocks(std::vector<block>&) const
@@ -439,7 +451,7 @@ namespace cryptonote
       * @note see tx_memory_pool::get_txpool_backlog
       */
      bool get_txpool_backlog(std::vector<tx_backlog_entry>& backlog) const;
-     
+
      /**
       * @copydoc tx_memory_pool::get_transactions
       * @param include_unrelayed_txes include unrelayed txes in result
@@ -730,12 +742,12 @@ namespace cryptonote
       * @return the number of blocks to sync in one go
       */
      std::pair<uint64_t, uint64_t> get_coinbase_tx_sum(const uint64_t start_offset, const size_t count);
-     
+
      /**
       * @brief get the network type we're on
       *
       * @return which network are we on?
-      */     
+      */
      network_type get_nettype() const { return m_nettype; };
 
      /**

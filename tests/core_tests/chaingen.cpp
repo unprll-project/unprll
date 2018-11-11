@@ -1,21 +1,21 @@
 // Copyright (c) 2014-2018, The Monero Project
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without modification, are
 // permitted provided that the following conditions are met:
-// 
+//
 // 1. Redistributions of source code must retain the above copyright notice, this list of
 //    conditions and the following disclaimer.
-// 
+//
 // 2. Redistributions in binary form must reproduce the above copyright notice, this list
 //    of conditions and the following disclaimer in the documentation and/or other
 //    materials provided with the distribution.
-// 
+//
 // 3. Neither the name of the copyright holder nor the names of its contributors may be
 //    used to endorse or promote products derived from this software without specific
 //    prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 // MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
@@ -25,7 +25,7 @@
 // INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//
 // Parts of this file are originally copyright (c) 2012-2013 The Cryptonote developers
 
 #include <vector>
@@ -178,10 +178,8 @@ bool test_generator::construct_block(cryptonote::block& blk, uint64_t height, co
 
   //blk.tree_root_hash = get_tx_tree_hash(blk);
 
-  // Nonce search...
-  blk.nonce = 0;
-  while (!miner::find_nonce_for_given_block(blk, get_test_difficulty(), height))
-    blk.timestamp++;
+  // Fill proof of work
+  fill_proof_of_work(blk, bf_diffic, height);
 
   add_block(blk, txs_weight, block_weights, already_generated_coins);
 
@@ -245,7 +243,7 @@ bool test_generator::construct_block_manually(block& blk, const block& prev_bloc
   //blk.tree_root_hash = get_tx_tree_hash(blk);
 
   difficulty_type a_diffic = actual_params & bf_diffic ? diffic : get_test_difficulty();
-  fill_nonce(blk, a_diffic, height);
+  fill_proof_of_work(blk, a_diffic, height);
 
   add_block(blk, txs_weight, block_weights, already_generated_coins, hf_version);
 
@@ -509,11 +507,32 @@ void fill_tx_sources_and_destinations(const std::vector<test_event_entry>& event
   }
 }
 
-void fill_nonce(cryptonote::block& blk, const difficulty_type& diffic, uint64_t height)
+void fill_proof_of_work(cryptonote::block& blk, const difficulty_type& diffic, uint64_t height)
 {
-  blk.nonce = 0;
-  while (!miner::find_nonce_for_given_block(blk, diffic, height))
-    blk.timestamp++;
+  crypto::hash h;
+
+  blk.iterations = 0;
+  blobdata bd = get_block_mining_blob(blk);
+  crypto::cn_slow_hash(bd.data(), bd.size(), h);
+
+  blk.hash_checkpoints.push_back(h);
+
+  while (true) {
+    if(check_hash(h, diffic))
+    {
+      blk.hash_checkpoints.push_back(h);
+      blk.invalidate_hashes();
+      return;
+    }
+
+    crypto::cn_slow_hash(h.data, sizeof(h.data), h);
+    blk.iterations += 1;
+
+    if (blk.iterations % config::HASH_CHECKPOINT_STEP == 0) {
+      // Add checkpoint hash
+      blk.hash_checkpoints.push_back(h);
+    }
+  }
 }
 
 bool construct_miner_tx_manually(size_t height, uint64_t already_generated_coins,

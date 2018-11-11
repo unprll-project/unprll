@@ -1,21 +1,22 @@
+// Copyright (c) 2018, The Unprll Project
 // Copyright (c) 2017-2018, The Monero Project
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without modification, are
 // permitted provided that the following conditions are met:
-// 
+//
 // 1. Redistributions of source code must retain the above copyright notice, this list of
 //    conditions and the following disclaimer.
-// 
+//
 // 2. Redistributions in binary form must reproduce the above copyright notice, this list
 //    of conditions and the following disclaimer in the documentation and/or other
 //    materials provided with the distribution.
-// 
+//
 // 3. Neither the name of the copyright holder nor the names of its contributors may be
 //    used to endorse or promote products derived from this software without specific
 //    prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 // MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
@@ -210,7 +211,7 @@ namespace rpc
 
       res.txs.emplace(found_hashes[i], std::move(info));
     }
-                                      
+
     res.missed_hashes = std::move(missed_vec);
     res.status = Message::STATUS_OK;
   }
@@ -461,7 +462,7 @@ namespace rpc
     const cryptonote::miner& lMiner = m_core.get_miner();
     res.active = lMiner.is_mining();
     res.is_background_mining_enabled = lMiner.get_is_background_mining_enabled();
-    
+
     if ( lMiner.is_mining() ) {
       res.speed = lMiner.get_speed();
       res.threads_count = lMiner.get_threads_count();
@@ -749,8 +750,10 @@ namespace rpc
     header.major_version = b.major_version;
     header.minor_version = b.minor_version;
     header.timestamp = b.timestamp;
-    header.nonce = b.nonce;
+    header.iterations = b.iterations;
+    header.hash_checkpoints = b.hash_checkpoints;
     header.prev_id = b.prev_id;
+    header.miner_specific = b.miner_specific;
 
     header.depth = m_core.get_current_blockchain_height() - header.height - 1;
 
