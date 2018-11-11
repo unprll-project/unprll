@@ -154,7 +154,7 @@ string tx2str(const cryptonote::transaction& tx, const cryptonote::hash256& tx_h
 
     ss << "{" << endl;
     ss << "\tversion:" << tx.version << endl;
-    ss << "\tunlock_time:" << tx.unlock_time << endl;
+    ss << "\tunlock_delta:" << tx.unlock_delta << endl;
     ss << "\t"
 
     return ss.str();

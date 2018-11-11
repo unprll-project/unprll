@@ -135,7 +135,7 @@ void TransactionHistoryImpl::refresh()
         ti->m_label     = m_wallet->m_wallet->get_subaddress_label(pd.m_subaddr_index);
         ti->m_timestamp = pd.m_timestamp;
         ti->m_confirmations = (wallet_height > pd.m_block_height) ? wallet_height - pd.m_block_height : 0;
-        ti->m_unlock_time = pd.m_unlock_time;
+        ti->m_unlock_delta = pd.m_unlock_delta;
         m_history.push_back(ti);
 
     }

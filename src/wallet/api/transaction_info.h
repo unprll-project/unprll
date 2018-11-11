@@ -76,7 +76,7 @@ private:
     std::string m_paymentid;
     std::vector<Transfer> m_transfers;
     uint64_t    m_confirmations;
-    uint64_t    m_unlock_time;
+    uint16_t    m_unlock_delta;
 
     friend class TransactionHistoryImpl;
 

@@ -1390,7 +1390,7 @@ PendingTransaction *WalletImpl::createTransaction(const string &dst_addr, const 
                 de.amount = *amount;
                 de.is_subaddress = info.is_subaddress;
                 dsts.push_back(de);
-                transaction->m_pending_tx = m_wallet->create_transactions_2(dsts, fake_outs_count, 0 /* unlock_time */,
+                transaction->m_pending_tx = m_wallet->create_transactions_2(dsts, fake_outs_count, 0 /* unlock_delta */,
                                                                           adjusted_priority,
                                                                           extra, subaddr_account, subaddr_indices);
             } else {
@@ -1400,7 +1400,7 @@ PendingTransaction *WalletImpl::createTransaction(const string &dst_addr, const 
                     for (uint32_t index = 0; index < m_wallet->get_num_subaddresses(subaddr_account); ++index)
                         subaddr_indices.insert(index);
                 }
-                transaction->m_pending_tx = m_wallet->create_transactions_all(0, info.address, info.is_subaddress, 1, fake_outs_count, 0 /* unlock_time */,
+                transaction->m_pending_tx = m_wallet->create_transactions_all(0, info.address, info.is_subaddress, 1, fake_outs_count, 0 /* unlock_delta */,
                                                                           adjusted_priority,
                                                                           extra, subaddr_account, subaddr_indices);
             }

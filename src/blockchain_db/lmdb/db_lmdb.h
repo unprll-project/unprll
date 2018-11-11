@@ -333,7 +333,7 @@ private:
   virtual uint64_t add_output(const crypto::hash& tx_hash,
       const tx_out& tx_output,
       const uint64_t& local_index,
-      const uint64_t unlock_time,
+      const uint16_t unlock_delta,
       const rct::key *commitment
       );
 

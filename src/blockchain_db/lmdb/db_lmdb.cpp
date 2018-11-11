@@ -817,7 +817,7 @@ uint64_t BlockchainLMDB::add_transaction_data(const crypto::hash& blk_hash, cons
   txindex ti;
   ti.key = tx_hash;
   ti.data.tx_id = tx_id;
-  ti.data.unlock_time = tx.unlock_time;
+  ti.data.unlock_delta = tx.unlock_delta;
   ti.data.block_id = m_height;  // we don't need blk_hash since we know m_height
 
   val_h.mv_size = sizeof(ti);
@@ -926,7 +926,7 @@ void BlockchainLMDB::remove_transaction_data(const crypto::hash& tx_hash, const 
 uint64_t BlockchainLMDB::add_output(const crypto::hash& tx_hash,
     const tx_out& tx_output,
     const uint64_t& local_index,
-    const uint64_t unlock_time,
+    const uint16_t unlock_delta,
     const rct::key *commitment)
 {
   LOG_PRINT_L3("BlockchainLMDB::" << __func__);
@@ -970,7 +970,7 @@ uint64_t BlockchainLMDB::add_output(const crypto::hash& tx_hash,
     ok.amount_index = 0;
   ok.output_id = m_num_outputs;
   ok.data.pubkey = boost::get < txout_to_key > (tx_output.target).key;
-  ok.data.unlock_time = unlock_time;
+  ok.data.unlock_delta = unlock_delta;
   ok.data.height = m_height;
   if (tx_output.amount == 0)
   {
@@ -2294,9 +2294,14 @@ uint64_t BlockchainLMDB::get_tx_unlock_time(const crypto::hash& h) const
     throw0(DB_ERROR(lmdb_error("DB error attempting to fetch tx data from hash: ", get_result).c_str()));
 
   txindex *tip = (txindex *)v.mv_data;
-  uint64_t ret = tip->data.unlock_time;
+  uint64_t ret = (uint64_t)tip->data.unlock_delta; // Explicit typecasting to be on the safer side
   TXN_POSTFIX_RDONLY();
-  return ret;
+
+  // XXX: I assume if the code got through to here, the height would definitely
+  //      be in the DB
+  uint64_t height = get_tx_block_height(h);
+
+  return (height + (4 * ret));
 }
 
 bool BlockchainLMDB::get_tx_blob(const crypto::hash& h, cryptonote::blobdata &bd) const

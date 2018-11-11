@@ -1,21 +1,21 @@
 // Copyright (c) 2014-2018, The Monero Project
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without modification, are
 // permitted provided that the following conditions are met:
-// 
+//
 // 1. Redistributions of source code must retain the above copyright notice, this list of
 //    conditions and the following disclaimer.
-// 
+//
 // 2. Redistributions in binary form must reproduce the above copyright notice, this list
 //    of conditions and the following disclaimer in the documentation and/or other
 //    materials provided with the distribution.
-// 
+//
 // 3. Neither the name of the copyright holder nor the names of its contributors may be
 //    used to endorse or promote products derived from this software without specific
 //    prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 // MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
@@ -25,7 +25,7 @@
 // INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//
 // Parts of this file are originally copyright (c) 2012-2013 The Cryptonote developers
 
 #pragma once
@@ -550,20 +550,20 @@ namespace tools
           std::string && loc
         , sources_t const & sources
         , destinations_t const & destinations
-        , uint64_t unlock_time
+        , uint16_t unlock_delta
         , cryptonote::network_type nettype
         )
         : transfer_error(std::move(loc), "transaction was not constructed")
         , m_sources(sources)
         , m_destinations(destinations)
-        , m_unlock_time(unlock_time)
+        , m_unlock_delta(unlock_delta)
         , m_nettype(nettype)
       {
       }
 
       const sources_t& sources() const { return m_sources; }
       const destinations_t& destinations() const { return m_destinations; }
-      uint64_t unlock_time() const { return m_unlock_time; }
+      uint16_t unlock_delta() const { return m_unlock_delta; }
 
       std::string to_string() const
       {
@@ -595,7 +595,7 @@ namespace tools
             cryptonote::print_money(dst.amount);
         }
 
-        ss << "\nunlock_time: " << m_unlock_time;
+        ss << "\nunlock_delta: " << m_unlock_delta;
 
         return ss.str();
       }
@@ -603,7 +603,7 @@ namespace tools
     private:
       sources_t m_sources;
       destinations_t m_destinations;
-      uint64_t m_unlock_time;
+      uint16_t m_unlock_delta;
       cryptonote::network_type m_nettype;
     };
     //----------------------------------------------------------------------------------------------------

@@ -133,7 +133,7 @@ int main(int argc, char* argv[])
 
     // Transaction verification tests
     GENERATE_AND_PLAY(gen_tx_big_version);
-    GENERATE_AND_PLAY(gen_tx_unlock_time);
+    GENERATE_AND_PLAY(gen_tx_unlock_delta);
     GENERATE_AND_PLAY(gen_tx_input_is_not_txin_to_key);
     GENERATE_AND_PLAY(gen_tx_no_inputs_no_outputs);
     GENERATE_AND_PLAY(gen_tx_no_inputs_has_outputs);
@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
     GENERATE_AND_PLAY(gen_tx_mixed_key_offest_not_exist);
     GENERATE_AND_PLAY(gen_tx_key_image_not_derive_from_tx_key);
     GENERATE_AND_PLAY(gen_tx_key_image_is_invalid);
-    GENERATE_AND_PLAY(gen_tx_check_input_unlock_time);
+    GENERATE_AND_PLAY(gen_tx_check_input_unlock_delta);
     GENERATE_AND_PLAY(gen_tx_txout_to_key_has_invalid_key);
     GENERATE_AND_PLAY(gen_tx_output_with_zero_amount);
     GENERATE_AND_PLAY(gen_tx_output_is_not_txout_to_key);

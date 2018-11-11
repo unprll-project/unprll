@@ -418,7 +418,7 @@ namespace wallet_rpc
       uint32_t priority;
       uint64_t mixin;
       uint64_t ring_size;
-      uint64_t unlock_time;
+      uint16_t unlock_delta;
       std::string payment_id;
       bool get_tx_key;
       bool do_not_relay;
@@ -432,7 +432,7 @@ namespace wallet_rpc
         KV_SERIALIZE(priority)
         KV_SERIALIZE_OPT(mixin, (uint64_t)0)
         KV_SERIALIZE_OPT(ring_size, (uint64_t)0)
-        KV_SERIALIZE(unlock_time)
+        KV_SERIALIZE(unlock_delta)
         KV_SERIALIZE(payment_id)
         KV_SERIALIZE(get_tx_key)
         KV_SERIALIZE_OPT(do_not_relay, false)
@@ -475,7 +475,7 @@ namespace wallet_rpc
       uint32_t priority;
       uint64_t mixin;
       uint64_t ring_size;
-      uint64_t unlock_time;
+      uint16_t unlock_delta;
       std::string payment_id;
       bool get_tx_keys;
       bool do_not_relay;
@@ -489,7 +489,7 @@ namespace wallet_rpc
         KV_SERIALIZE(priority)
         KV_SERIALIZE_OPT(mixin, (uint64_t)0)
         KV_SERIALIZE_OPT(ring_size, (uint64_t)0)
-        KV_SERIALIZE(unlock_time)
+        KV_SERIALIZE(unlock_delta)
         KV_SERIALIZE(payment_id)
         KV_SERIALIZE(get_tx_keys)
         KV_SERIALIZE_OPT(do_not_relay, false)
@@ -640,7 +640,7 @@ namespace wallet_rpc
       uint64_t mixin;
       uint64_t ring_size;
       uint64_t outputs;
-      uint64_t unlock_time;
+      uint16_t unlock_delta;
       std::string payment_id;
       bool get_tx_keys;
       uint64_t below_amount;
@@ -656,7 +656,7 @@ namespace wallet_rpc
         KV_SERIALIZE_OPT(mixin, (uint64_t)0)
         KV_SERIALIZE_OPT(ring_size, (uint64_t)0)
         KV_SERIALIZE_OPT(outputs, (uint64_t)1)
-        KV_SERIALIZE(unlock_time)
+        KV_SERIALIZE(unlock_delta)
         KV_SERIALIZE(payment_id)
         KV_SERIALIZE(get_tx_keys)
         KV_SERIALIZE(below_amount)
@@ -708,7 +708,7 @@ namespace wallet_rpc
       uint64_t mixin;
       uint64_t ring_size;
       uint64_t outputs;
-      uint64_t unlock_time;
+      uint16_t unlock_delta;
       std::string payment_id;
       bool get_tx_key;
       std::string key_image;
@@ -722,7 +722,7 @@ namespace wallet_rpc
         KV_SERIALIZE_OPT(mixin, (uint64_t)0)
         KV_SERIALIZE_OPT(ring_size, (uint64_t)0)
         KV_SERIALIZE_OPT(outputs, (uint64_t)1)
-        KV_SERIALIZE(unlock_time)
+        KV_SERIALIZE(unlock_delta)
         KV_SERIALIZE(payment_id)
         KV_SERIALIZE(get_tx_key)
         KV_SERIALIZE(key_image)
@@ -798,7 +798,7 @@ namespace wallet_rpc
     std::string tx_hash;
     uint64_t amount;
     uint64_t block_height;
-    uint64_t unlock_time;
+    uint16_t unlock_delta;
     cryptonote::subaddress_index subaddr_index;
     std::string address;
 
@@ -807,7 +807,7 @@ namespace wallet_rpc
       KV_SERIALIZE(tx_hash)
       KV_SERIALIZE(amount)
       KV_SERIALIZE(block_height)
-      KV_SERIALIZE(unlock_time)
+      KV_SERIALIZE(unlock_delta)
       KV_SERIALIZE(subaddr_index)
       KV_SERIALIZE(address)
     END_KV_SERIALIZE_MAP()
@@ -856,7 +856,7 @@ namespace wallet_rpc
       END_KV_SERIALIZE_MAP()
     };
   };
-  
+
   struct transfer_details
   {
     uint64_t amount;
@@ -1205,7 +1205,7 @@ namespace wallet_rpc
     std::string note;
     std::list<transfer_destination> destinations;
     std::string type;
-    uint64_t unlock_time;
+    uint16_t unlock_delta;
     cryptonote::subaddress_index subaddr_index;
     std::string address;
     bool double_spend_seen;
@@ -1222,7 +1222,7 @@ namespace wallet_rpc
       KV_SERIALIZE(note);
       KV_SERIALIZE(destinations);
       KV_SERIALIZE(type);
-      KV_SERIALIZE(unlock_time)
+      KV_SERIALIZE(unlock_delta)
       KV_SERIALIZE(subaddr_index);
       KV_SERIALIZE(address);
       KV_SERIALIZE(double_spend_seen)
@@ -1741,8 +1741,8 @@ namespace wallet_rpc
 
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(threads_count)
-        KV_SERIALIZE(do_background_mining)        
-        KV_SERIALIZE(ignore_battery)        
+        KV_SERIALIZE(do_background_mining)
+        KV_SERIALIZE(ignore_battery)
       END_KV_SERIALIZE_MAP()
     };
 

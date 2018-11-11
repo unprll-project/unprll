@@ -51,7 +51,7 @@ TransactionInfoImpl::TransactionInfoImpl()
       , m_subaddrAccount(0)
       , m_timestamp(0)
       , m_confirmations(0)
-      , m_unlock_time(0)
+      , m_unlock_delta(0)
 {
 
 }
@@ -135,7 +135,7 @@ uint64_t TransactionInfoImpl::confirmations() const
 
 uint64_t TransactionInfoImpl::unlockTime() const
 {
-    return m_unlock_time;
+    return m_blockheight + m_unlock_delta;
 }
 
 } // namespace

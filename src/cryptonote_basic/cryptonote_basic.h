@@ -160,7 +160,7 @@ namespace cryptonote
   public:
     // tx information
     size_t   version;
-    uint64_t unlock_time;  //number of block (or time), used as a limitation like: spend this tx not early then block/time
+    uint16_t unlock_delta;  // number of spans of 4 blocks, used as a limitation, for example: spend this tx not earlier than block
 
     std::vector<txin_v> vin;
     std::vector<tx_out> vout;
@@ -170,7 +170,7 @@ namespace cryptonote
     BEGIN_SERIALIZE()
       VARINT_FIELD(version)
       if(version == 0 || CURRENT_TRANSACTION_VERSION < version) return false;
-      VARINT_FIELD(unlock_time)
+      VARINT_FIELD(unlock_delta)
       FIELD(vin)
       FIELD(vout)
       FIELD(extra)
@@ -311,7 +311,7 @@ namespace cryptonote
   void transaction::set_null()
   {
     version = 1;
-    unlock_time = 0;
+    unlock_delta = 0;
     vin.clear();
     vout.clear();
     extra.clear();

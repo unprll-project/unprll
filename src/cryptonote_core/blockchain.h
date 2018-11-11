@@ -1254,9 +1254,9 @@ namespace cryptonote
      * @brief checks if a transaction is unlocked (its outputs spendable)
      *
      * This function checks to see if a transaction is unlocked.
-     * unlock_time is either a block index or a unix time.
+     * unlock_time is a block index.
      *
-     * @param unlock_time the unlock parameter (height or time)
+     * @param unlock_time the unlock height
      *
      * @return true if spendable, otherwise false
      */

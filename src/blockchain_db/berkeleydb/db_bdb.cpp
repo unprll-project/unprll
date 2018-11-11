@@ -331,8 +331,8 @@ void BlockchainBDB::add_transaction_data(const crypto::hash& blk_hash, const tra
     if (m_tx_heights->put(DB_DEFAULT_TX, &val_h, &height, 0))
         throw0(DB_ERROR("Failed to add tx block height to db transaction"));
 
-    Dbt_copy<uint64_t> unlock_time(tx.unlock_time);
-    if (m_tx_unlocks->put(DB_DEFAULT_TX, &val_h, &unlock_time, 0))
+    Dbt_copy<uint16_t> unlock_delta(tx.unlock_delta);
+    if (m_tx_unlocks->put(DB_DEFAULT_TX, &val_h, &unlock_delta, 0))
         throw0(DB_ERROR("Failed to add tx unlock time to db transaction"));
 }
 
@@ -361,7 +361,7 @@ void BlockchainBDB::remove_transaction_data(const crypto::hash& tx_hash, const t
         throw1(DB_ERROR("Failed to add removal of tx outputs to db transaction"));
 }
 
-void BlockchainBDB::add_output(const crypto::hash& tx_hash, const tx_out& tx_output, const uint64_t& local_index, const uint64_t unlock_time, const rct::key *commitment)
+void BlockchainBDB::add_output(const crypto::hash& tx_hash, const tx_out& tx_output, const uint64_t& local_index, const uint16_t unlock_delta, const rct::key *commitment)
 {
     LOG_PRINT_L3("BlockchainBDB::" << __func__);
     check_open();
@@ -386,7 +386,7 @@ void BlockchainBDB::add_output(const crypto::hash& tx_hash, const tx_out& tx_out
     {
         output_data_t od;
         od.pubkey = boost::get < txout_to_key > (tx_output.target).key;
-        od.unlock_time = unlock_time;
+        od.unlock_delta = unlock_delta;
         od.height = m_height;
 
         Dbt_copy<output_data_t> data(od);
@@ -1532,14 +1532,18 @@ uint64_t BlockchainBDB::get_tx_unlock_time(const crypto::hash& h) const
     check_open();
 
     Dbt_copy<crypto::hash> key(h);
-    Dbt_copy<uint64_t> result;
+    Dbt_copy<uint16_t> result;
     auto get_result = m_tx_unlocks->get(DB_DEFAULT_TX, &key, &result, 0);
     if (get_result == DB_NOTFOUND)
-        throw1(TX_DNE(std::string("tx unlock time with hash ").append(epee::string_tools::pod_to_hex(h)).append(" not found in db").c_str()));
+        throw1(TX_DNE(std::string("tx unlock delta with hash ").append(epee::string_tools::pod_to_hex(h)).append(" not found in db").c_str()));
     else if (get_result)
-        throw0(DB_ERROR("DB error attempting to fetch tx unlock time from hash"));
+        throw0(DB_ERROR("DB error attempting to fetch tx unlock delta from hash"));
 
-    return result;
+    // XXX: I assume if the code got through to here, the height would definitely
+    //      be in the DB
+    uint64_t height = get_tx_block_height(h);
+
+    return (height + (4 * (uint64_t)result));
 }
 
 transaction BlockchainBDB::get_tx(const crypto::hash& h) const

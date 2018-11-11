@@ -570,7 +570,7 @@ bool construct_miner_tx_manually(size_t height, uint64_t already_generated_coins
   tx.vout.push_back(out);
 
   tx.version = 1;
-  tx.unlock_time = height + CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW;
+  tx.unlock_delta = CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW;
 
   return true;
 }

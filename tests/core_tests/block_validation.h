@@ -130,22 +130,12 @@ struct gen_block_no_miner_tx : public gen_block_verification_base<1>
   bool generate(std::vector<test_event_entry>& events) const;
 };
 
-struct gen_block_unlock_time_is_low : public gen_block_verification_base<1>
+struct gen_block_unlock_delta_is_low : public gen_block_verification_base<1>
 {
   bool generate(std::vector<test_event_entry>& events) const;
 };
 
-struct gen_block_unlock_time_is_high : public gen_block_verification_base<1>
-{
-  bool generate(std::vector<test_event_entry>& events) const;
-};
-
-struct gen_block_unlock_time_is_timestamp_in_past : public gen_block_verification_base<1>
-{
-  bool generate(std::vector<test_event_entry>& events) const;
-};
-
-struct gen_block_unlock_time_is_timestamp_in_future : public gen_block_verification_base<1>
+struct gen_block_unlock_delta_is_high : public gen_block_verification_base<1>
 {
   bool generate(std::vector<test_event_entry>& events) const;
 };

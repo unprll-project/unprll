@@ -260,12 +260,12 @@ bool gen_block_no_miner_tx::generate(std::vector<test_event_entry>& events) cons
   return true;
 }
 
-bool gen_block_unlock_time_is_low::generate(std::vector<test_event_entry>& events) const
+bool gen_block_unlock_delta_is_low::generate(std::vector<test_event_entry>& events) const
 {
   BLOCK_VALIDATION_INIT_GENERATE();
 
   MAKE_MINER_TX_MANUALLY(miner_tx, blk_0);
-  --miner_tx.unlock_time;
+  --miner_tx.unlock_delta;
 
   block blk_1;
   generator.construct_block_manually(blk_1, blk_0, miner_account, test_generator::bf_miner_tx, 0, 0, 0, crypto::hash(), 0, miner_tx);
@@ -276,44 +276,12 @@ bool gen_block_unlock_time_is_low::generate(std::vector<test_event_entry>& event
   return true;
 }
 
-bool gen_block_unlock_time_is_high::generate(std::vector<test_event_entry>& events) const
+bool gen_block_unlock_delta_is_high::generate(std::vector<test_event_entry>& events) const
 {
   BLOCK_VALIDATION_INIT_GENERATE();
 
   MAKE_MINER_TX_MANUALLY(miner_tx, blk_0);
-  ++miner_tx.unlock_time;
-
-  block blk_1;
-  generator.construct_block_manually(blk_1, blk_0, miner_account, test_generator::bf_miner_tx, 0, 0, 0, crypto::hash(), 0, miner_tx);
-  events.push_back(blk_1);
-
-  DO_CALLBACK(events, "check_block_purged");
-
-  return true;
-}
-
-bool gen_block_unlock_time_is_timestamp_in_past::generate(std::vector<test_event_entry>& events) const
-{
-  BLOCK_VALIDATION_INIT_GENERATE();
-
-  MAKE_MINER_TX_MANUALLY(miner_tx, blk_0);
-  miner_tx.unlock_time = blk_0.timestamp - 10 * 60;
-
-  block blk_1;
-  generator.construct_block_manually(blk_1, blk_0, miner_account, test_generator::bf_miner_tx, 0, 0, 0, crypto::hash(), 0, miner_tx);
-  events.push_back(blk_1);
-
-  DO_CALLBACK(events, "check_block_purged");
-
-  return true;
-}
-
-bool gen_block_unlock_time_is_timestamp_in_future::generate(std::vector<test_event_entry>& events) const
-{
-  BLOCK_VALIDATION_INIT_GENERATE();
-
-  MAKE_MINER_TX_MANUALLY(miner_tx, blk_0);
-  miner_tx.unlock_time = blk_0.timestamp + 3 * CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW * DIFFICULTY_BLOCKS_ESTIMATE_TIMESPAN;
+  ++miner_tx.unlock_delta;
 
   block blk_1;
   generator.construct_block_manually(blk_1, blk_0, miner_account, test_generator::bf_miner_tx, 0, 0, 0, crypto::hash(), 0, miner_tx);

@@ -115,7 +115,7 @@ extern const command_line::arg_descriptor<bool, false> arg_db_salvage;
 struct output_data_t
 {
   crypto::public_key pubkey;       //!< the output's public key (for spend verification)
-  uint64_t           unlock_time;  //!< the output's unlock time (or height)
+  uint16_t           unlock_delta; //!< the output's unlock delta
   uint64_t           height;       //!< the height of the block which created the output
   rct::key           commitment;   //!< the output's amount commitment (for spend verification)
 };
@@ -125,7 +125,7 @@ struct output_data_t
 struct tx_data_t
 {
   uint64_t tx_id;
-  uint64_t unlock_time;
+  uint16_t unlock_delta;
   uint64_t block_id;
 };
 #pragma pack(pop)
@@ -147,10 +147,11 @@ struct txpool_tx_meta_t
   uint8_t kept_by_block;
   uint8_t relayed;
   uint8_t do_not_relay;
+  uint8_t dandelion_stem;
   uint8_t double_spend_seen: 1;
   uint8_t bf_padding: 7;
 
-  uint8_t padding[76]; // till 192 bytes
+  uint8_t padding[75]; // till 192 bytes
 };
 
 #define DBF_SAFE       1
@@ -408,7 +409,7 @@ private:
   /**
    * @brief remove data about a transaction
    *
-   * The subclass implementing this will remove the transaction data 
+   * The subclass implementing this will remove the transaction data
    * for the passed transaction.  The data to be removed was added in
    * add_transaction_data().  Additionally, current subclasses have behavior
    * which requires the transaction itself as a parameter here.  Future
@@ -445,11 +446,11 @@ private:
    * @param tx_hash hash of the transaction the output was created by
    * @param tx_output the output
    * @param local_index index of the output in its transaction
-   * @param unlock_time unlock time/height of the output
+   * @param unlock_delta number of 4-block spans to unlock output
    * @param commitment the rct commitment to the output amount
    * @return amount output index
    */
-  virtual uint64_t add_output(const crypto::hash& tx_hash, const tx_out& tx_output, const uint64_t& local_index, const uint64_t unlock_time, const rct::key *commitment) = 0;
+  virtual uint64_t add_output(const crypto::hash& tx_hash, const tx_out& tx_output, const uint64_t& local_index, const uint16_t unlock_delta, const rct::key *commitment) = 0;
 
   /**
    * @brief store amount output indices for a tx's outputs
@@ -1098,18 +1099,18 @@ public:
   virtual bool tx_exists(const crypto::hash& h) const = 0;
   virtual bool tx_exists(const crypto::hash& h, uint64_t& tx_id) const = 0;
 
-  // return unlock time of tx with hash <h>
+  // return unlock delta of tx with hash <h>
   /**
-   * @brief fetch a transaction's unlock time/height
+   * @brief fetch a transaction's unlock time
    *
-   * The subclass should return the stored unlock time for the transaction
-   * with the given hash.
+   * The subclass should return the unlock time for the transaction with the
+   * given hash by computing it from the unlock delta.
    *
    * If no such transaction exists, the subclass should throw TX_DNE.
    *
    * @param h the hash of the requested transaction
    *
-   * @return the unlock time/height
+   * @return the unlock time
    */
   virtual uint64_t get_tx_unlock_time(const crypto::hash& h) const = 0;
 
@@ -1312,7 +1313,7 @@ public:
    * @param outputs return-by-reference a list of outputs' metadata
    */
   virtual void get_output_key(const uint64_t &amount, const std::vector<uint64_t> &offsets, std::vector<output_data_t> &outputs, bool allow_partial = false) = 0;
-  
+
   /*
    * FIXME: Need to check with git blame and ask what this does to
    * document it
