@@ -4183,17 +4183,15 @@ void simple_wallet::on_money_received(uint64_t height, const crypto::hash &txid,
     if (find_tx_extra_field_by_type(tx_extra_fields, extra_nonce))
     {
       crypto::hash8 payment_id8 = crypto::null_hash8;
-      crypto::hash payment_id = crypto::null_hash;
       if (get_encrypted_payment_id_from_tx_extra_nonce(extra_nonce.nonce, payment_id8)) {
           message_writer() <<
             tr("NOTE: this transaction uses an encrypted payment ID: consider using subaddresses instead");
       }
-   }
-  }
-  if (m_auto_refresh_refreshing)
-    m_cmd_binder.print_prompt();
-  else
-    m_refresh_progress_reporter.update(height, true);
+    }
+    if (m_auto_refresh_refreshing)
+        m_cmd_binder.print_prompt();
+    else
+        m_refresh_progress_reporter.update(height, true);
 }
 //----------------------------------------------------------------------------------------------------
 void simple_wallet::on_unconfirmed_money_received(uint64_t height, const crypto::hash &txid, const cryptonote::transaction& tx, uint64_t amount, const cryptonote::subaddress_index& subaddr_index)
@@ -8058,7 +8056,7 @@ bool simple_wallet::show_transfer(const std::vector<std::string> &args)
       success_msg_writer() << "Timestamp: " << get_human_readable_timestamp(pd.m_timestamp);
       success_msg_writer() << "Amount: " << print_money(pd.m_amount);
       success_msg_writer() << "Payment ID: " << payment_id;
-      uint64_t bh = pd.m_block_height + std::max(pd.m_unlock_delta, CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE);
+      uint64_t bh = pd.m_block_height + std::max(pd.m_unlock_delta * 4, (uint16_t)CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE);
       uint64_t last_block_reward = m_wallet->get_last_block_reward();
       uint64_t suggested_threshold = last_block_reward ? (pd.m_amount + last_block_reward - 1) / last_block_reward : 0;
       if (bh >= last_block_height)
