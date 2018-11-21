@@ -8056,7 +8056,7 @@ bool simple_wallet::show_transfer(const std::vector<std::string> &args)
       success_msg_writer() << "Timestamp: " << get_human_readable_timestamp(pd.m_timestamp);
       success_msg_writer() << "Amount: " << print_money(pd.m_amount);
       success_msg_writer() << "Payment ID: " << payment_id;
-      uint64_t bh = pd.m_block_height + std::max(pd.m_unlock_delta * 4, (uint16_t)CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE);
+      uint64_t bh = pd.m_block_height + std::max((uint16_t)(pd.m_unlock_delta * 4), (uint16_t)CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE);
       uint64_t last_block_reward = m_wallet->get_last_block_reward();
       uint64_t suggested_threshold = last_block_reward ? (pd.m_amount + last_block_reward - 1) / last_block_reward : 0;
       if (bh >= last_block_height)
