@@ -1237,11 +1237,9 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
 
   // Copy hash_checkpoints and timestamp, and reset block to original state.
   std::vector<crypto::hash> hash_checkpoints = block.hash_checkpoints;
-  uint64_t timestamp = block.timestamp;
   uint32_t iterations = block.iterations;
 
   block.hash_checkpoints.clear();
-  block.timestamp = 0;
   block.iterations = 0;
 
   // Run first iteration
@@ -1280,7 +1278,6 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
           }
       }
 
-      block.timestamp = timestamp;
       return true;
   } else {
       // Multithread verification for (usually) faster performance
@@ -1344,7 +1341,6 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
 
       proof_of_work = hash_checkpoints.back();
 
-      block.timestamp = timestamp;
       block.hash_checkpoints = hash_checkpoints;
       block.iterations = iterations;
 
@@ -1412,12 +1408,15 @@ bool Blockchain::create_block_template(block& b, const account_public_address& _
   b.prev_id = get_tail_id();
   b.miner_specific = _miner_address.m_spend_public_key;
   b.timestamp = time(NULL);
+  // Make it fuzzy
+  b.timestamp = b.timestamp - (b.timestamp % DIFFICULTY_TARGET) + (DIFFICULTY_TARGET / 2);
   b.iterations = 0;
   b.hash_checkpoints = std::vector<crypto::hash>();
 
   uint64_t median_ts;
   if (!check_block_timestamp(b, median_ts))
   {
+    // Median timestamp is already fuzzy
     b.timestamp = median_ts;
   }
 
@@ -3279,10 +3278,19 @@ bool Blockchain::check_block_timestamp(std::vector<uint64_t>& timestamps, const 
 {
   LOG_PRINT_L3("Blockchain::" << __func__);
   median_ts = epee::misc_utils::median(timestamps);
+  // Make it fuzzy
+  median_ts = median_ts - (median_ts % DIFFICULTY_TARGET) + (DIFFICULTY_TARGET / 2);
 
   if(b.timestamp < median_ts)
   {
-    MERROR_VER("Timestamp of block with id: " << get_block_hash(b) << ", " << b.timestamp << ", less than median of last " << BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW << " blocks, " << median_ts);
+    MERROR_VER("Timestamp of block with id: " << get_block_hash(b) << ", " << b.timestamp << ", is less than fuzzy median of last " << BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW << " blocks, " << median_ts);
+    return false;
+  }
+
+  // Ensure that the timestamp is rounded center to the nearest (target) seconds (10 minutes in our case)
+  if(b.timestamp % DIFFICULTY_TARGET != (DIFFICULTY_TARGET / 2))
+  {
+    MERROR_VER("Timestamp of block with id: " << get_block_hash(b) << ", " << b.timestamp << " is not rounded center to nearest " << DIFFICULTY_TARGET << "seconds");
     return false;
   }
 

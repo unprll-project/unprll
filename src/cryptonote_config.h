@@ -45,7 +45,7 @@
 #define CURRENT_TRANSACTION_VERSION                     2
 #define CURRENT_BLOCK_MAJOR_VERSION                     1
 #define CURRENT_BLOCK_MINOR_VERSION                     9
-#define CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT              1800       // 3 * 600
+#define CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT              120
 #define CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE             2          // Blocks
 
 #define BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW               11
