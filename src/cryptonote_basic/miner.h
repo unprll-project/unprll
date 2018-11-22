@@ -140,6 +140,7 @@ namespace cryptonote
     std::string m_config_folder_path;
     std::atomic<uint64_t> m_last_hr_merge_time;
     std::atomic<uint64_t> m_hashes;
+    std::atomic<uint64_t> m_cumul_hashes;
     std::atomic<uint64_t> m_current_hash_rate;
     epee::critical_section m_last_hash_rates_lock;
     std::list<uint64_t> m_last_hash_rates;

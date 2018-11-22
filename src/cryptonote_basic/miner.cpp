@@ -107,6 +107,7 @@ namespace cryptonote
     m_starter_nonce(0),
     m_last_hr_merge_time(0),
     m_hashes(0),
+    m_cumul_hashes(0),
     m_do_print_hashrate(false),
     m_do_mining(false),
     m_current_hash_rate(0),
@@ -183,6 +184,7 @@ namespace cryptonote
   {
     if(m_last_hr_merge_time && is_mining())
     {
+      m_cumul_hashes += m_hashes;
       m_current_hash_rate = m_hashes * 1000 / ((misc_utils::get_tick_count() - m_last_hr_merge_time + 1));
       CRITICAL_REGION_LOCAL(m_last_hash_rates_lock);
       m_last_hash_rates.push_back(m_current_hash_rate);
@@ -194,7 +196,7 @@ namespace cryptonote
         float hr = static_cast<float>(total_hr)/static_cast<float>(m_last_hash_rates.size());
         const auto flags = std::cout.flags();
         const auto precision = std::cout.precision();
-        std::cout << "hashrate: " << std::setprecision(4) << std::fixed << hr << flags << precision << ENDL;
+        std::cout << "Hashrate: " << std::setprecision(4) << std::fixed << hr << flags << precision << " Iterations:" << m_cumul_hashes << ENDL;
       }
     }
     m_last_hr_merge_time = misc_utils::get_tick_count();
@@ -361,6 +363,7 @@ namespace cryptonote
     m_background_mining_thread.join();
 
     MINFO("Mining has been stopped, " << m_threads.size() << " finished" );
+    m_cumul_hashes = 0;
     m_threads.clear();
     return true;
   }
@@ -469,6 +472,7 @@ namespace cryptonote
           //success update, lets update config
           if (!m_config_folder_path.empty())
             epee::serialization::store_t_to_json_file(m_config, m_config_folder_path + "/" + MINER_CONFIG_FILE_NAME);
+          m_cumul_hashes = 0;
         }
       }
 
