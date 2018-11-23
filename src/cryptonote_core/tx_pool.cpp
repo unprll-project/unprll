@@ -1079,10 +1079,8 @@ namespace cryptonote
       bool parsed;
     } lazy_tx(txblob, tx);
 
-    // TODO FIXME Check if this works
     // If it's a Dandelion stem transaction, don't include it yet
     if (txd.dandelion_stem) {
-        #warning Does this work as expected?
         return false;
     }
 
