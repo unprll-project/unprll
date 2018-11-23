@@ -1231,7 +1231,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
   // Allocate slow hash state
   slow_hash_allocate_state();
 
-  // Copy hash_checkpoints and timestamp, and reset block to original state.
+  // Copy hash_checkpoints and iterations, and reset iterations to 0.
   std::vector<crypto::hash> hash_checkpoints = block.hash_checkpoints;
   uint32_t iterations = block.iterations;
 
@@ -1247,6 +1247,13 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
       MERROR_VER("First hash mismatch. Expected: " << hash_checkpoints[0] << ", got: " << proof_of_work);
       return false;
   }
+
+  // Wait for any existing verifications to occur
+  for (auto &t : m_threads) {
+      t.join();
+  }
+  // Remove existing threads
+  m_threads.clear();
 
   // TODO FIXME Move all slow_hash_free_state calls into one place
   if (iterations < config::HASH_CHECKPOINT_STEP) {
@@ -1277,13 +1284,6 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
       return true;
   } else {
       // Multithread verification for (usually) faster performance
-
-      // Wait for any existing verifications to occur
-      for (auto &t : m_threads) {
-          t.join();
-      }
-      // Remove existing threads
-      m_threads.clear();
 
       uint8_t threads_count = tools::get_max_concurrency();
       boost::thread::attributes attrs;
