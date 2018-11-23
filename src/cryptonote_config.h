@@ -155,8 +155,8 @@ namespace config
   std::string const GENESIS_TX = "010301ff000180b8ceedf7ff03029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd08807121017767aafcde9be00dcfd098715ebcf7f410daebc582fda69d24a28e9d0bc890d1";
 
   // Unprll specific
-  uint64_t const HASH_CHECKPOINT_STEP = 30; // hashes between each checkpoint
-  double const BLOCK_VALID_THRESHOLD = 0.05; // 5% of all hash checkpoints must verify correctly
+  uint64_t const HASH_CHECKPOINT_STEP = 10; // hashes between each checkpoint
+  double const BLOCK_VALID_THRESHOLD = 0.20; // 20% of all hash checkpoints must verify correctly
 
   // Dandelion config
   uint8_t const DANDELION_TX_EMBARGO_PERIOD = 30;
