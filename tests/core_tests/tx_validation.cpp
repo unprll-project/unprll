@@ -1,21 +1,21 @@
 // Copyright (c) 2014-2018, The Monero Project
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without modification, are
 // permitted provided that the following conditions are met:
-// 
+//
 // 1. Redistributions of source code must retain the above copyright notice, this list of
 //    conditions and the following disclaimer.
-// 
+//
 // 2. Redistributions in binary form must reproduce the above copyright notice, this list
 //    of conditions and the following disclaimer in the documentation and/or other
 //    materials provided with the distribution.
-// 
+//
 // 3. Neither the name of the copyright holder nor the names of its contributors may be
 //    used to endorse or promote products derived from this software without specific
 //    prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 // MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
@@ -25,7 +25,7 @@
 // INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//
 // Parts of this file are originally copyright (c) 2012-2013 The Cryptonote developers
 
 #include "chaingen.h"
@@ -40,14 +40,14 @@ namespace
 {
   struct tx_builder
   {
-    void step1_init(size_t version = 1, uint64_t unlock_time = 0)
+    void step1_init(size_t version = 1, uint16_t unlock_delta = 0)
     {
       m_tx.vin.clear();
       m_tx.vout.clear();
       m_tx.signatures.clear();
 
       m_tx.version = version;
-      m_tx.unlock_time = unlock_time;
+      m_tx.unlock_delta = unlock_delta;
 
       m_tx_key = keypair::generate(hw::get_device("default"));
       add_tx_pub_key_to_extra(m_tx, m_tx_key.pub);
@@ -135,16 +135,16 @@ namespace
     crypto::hash m_tx_prefix_hash;
   };
 
-  transaction make_simple_tx_with_unlock_time(const std::vector<test_event_entry>& events,
+  transaction make_simple_tx_with_unlock_delta(const std::vector<test_event_entry>& events,
     const cryptonote::block& blk_head, const cryptonote::account_base& from, const cryptonote::account_base& to,
-    uint64_t amount, uint64_t unlock_time)
+    uint64_t amount, uint16_t unlock_delta)
   {
     std::vector<tx_source_entry> sources;
     std::vector<tx_destination_entry> destinations;
     fill_tx_sources_and_destinations(events, blk_head, from, to, amount, TESTS_DEFAULT_FEE, 0, sources, destinations);
 
     tx_builder builder;
-    builder.step1_init(1, unlock_time);
+    builder.step1_init(1, unlock_delta);
     builder.step2_fill_inputs(from.get_keys(), sources);
     builder.step3_fill_outputs(destinations);
     builder.step4_calc_hash();
@@ -206,7 +206,7 @@ bool gen_tx_big_version::generate(std::vector<test_event_entry>& events) const
   return true;
 }
 
-bool gen_tx_unlock_time::generate(std::vector<test_event_entry>& events) const
+bool gen_tx_unlock_delta::generate(std::vector<test_event_entry>& events) const
 {
   uint64_t ts_start = 1338224400;
 
@@ -215,32 +215,26 @@ bool gen_tx_unlock_time::generate(std::vector<test_event_entry>& events) const
   REWIND_BLOCKS_N(events, blk_1, blk_0, miner_account, 10);
   REWIND_BLOCKS(events, blk_1r, blk_1, miner_account);
 
-  auto make_tx_with_unlock_time = [&](uint64_t unlock_time) -> transaction
+  auto make_tx_with_unlock_delta = [&](uint16_t unlock_delta) -> transaction
   {
-    return make_simple_tx_with_unlock_time(events, blk_1, miner_account, miner_account, MK_COINS(1), unlock_time);
+    return make_simple_tx_with_unlock_delta(events, blk_1, miner_account, miner_account, MK_COINS(1), unlock_delta);
   };
 
   std::list<transaction> txs_0;
 
-  txs_0.push_back(make_tx_with_unlock_time(0));
+  txs_0.push_back(make_tx_with_unlock_delta(0));
   events.push_back(txs_0.back());
 
-  txs_0.push_back(make_tx_with_unlock_time(get_block_height(blk_1r) - 1));
+  txs_0.push_back(make_tx_with_unlock_delta(get_block_height(blk_1r) - 1));
   events.push_back(txs_0.back());
 
-  txs_0.push_back(make_tx_with_unlock_time(get_block_height(blk_1r)));
+  txs_0.push_back(make_tx_with_unlock_delta(get_block_height(blk_1r)));
   events.push_back(txs_0.back());
 
-  txs_0.push_back(make_tx_with_unlock_time(get_block_height(blk_1r) + 1));
+  txs_0.push_back(make_tx_with_unlock_delta(get_block_height(blk_1r) + 1));
   events.push_back(txs_0.back());
 
-  txs_0.push_back(make_tx_with_unlock_time(get_block_height(blk_1r) + 2));
-  events.push_back(txs_0.back());
-
-  txs_0.push_back(make_tx_with_unlock_time(ts_start - 1));
-  events.push_back(txs_0.back());
-
-  txs_0.push_back(make_tx_with_unlock_time(time(0) + 60 * 60));
+  txs_0.push_back(make_tx_with_unlock_delta(get_block_height(blk_1r) + 2));
   events.push_back(txs_0.back());
 
   MAKE_NEXT_BLOCK_TX_LIST(events, blk_2, blk_1r, miner_account, txs_0);
@@ -570,7 +564,7 @@ bool gen_tx_key_image_is_invalid::generate(std::vector<test_event_entry>& events
   return true;
 }
 
-bool gen_tx_check_input_unlock_time::generate(std::vector<test_event_entry>& events) const
+bool gen_tx_check_input_unlock_delta::generate(std::vector<test_event_entry>& events) const
 {
   static const size_t tests_count = 6;
 
@@ -589,10 +583,10 @@ bool gen_tx_check_input_unlock_time::generate(std::vector<test_event_entry>& eve
   }
 
   std::list<transaction> txs_0;
-  auto make_tx_to_acc = [&](size_t acc_idx, uint64_t unlock_time)
+  auto make_tx_to_acc = [&](size_t acc_idx, uint16_t unlock_delta)
   {
-    txs_0.push_back(make_simple_tx_with_unlock_time(events, blk_1, miner_account, accounts[acc_idx],
-      MK_COINS(1) + TESTS_DEFAULT_FEE, unlock_time));
+    txs_0.push_back(make_simple_tx_with_unlock_delta(events, blk_1, miner_account, accounts[acc_idx],
+      MK_COINS(1) + TESTS_DEFAULT_FEE, unlock_delta));
     events.push_back(txs_0.back());
   };
 
@@ -608,7 +602,7 @@ bool gen_tx_check_input_unlock_time::generate(std::vector<test_event_entry>& eve
   std::list<transaction> txs_1;
   auto make_tx_from_acc = [&](size_t acc_idx, bool invalid)
   {
-    transaction tx = make_simple_tx_with_unlock_time(events, blk_2, accounts[acc_idx], miner_account, MK_COINS(1), 0);
+    transaction tx = make_simple_tx_with_unlock_delta(events, blk_2, accounts[acc_idx], miner_account, MK_COINS(1), 0);
     if (invalid)
     {
       DO_CALLBACK(events, "mark_invalid_tx");
