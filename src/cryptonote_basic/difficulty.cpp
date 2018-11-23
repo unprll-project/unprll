@@ -153,7 +153,7 @@ namespace cryptonote {
         assert(timestamps.size() == cumulative_difficulties.size() && timestamps.size() <= N+1 );
 
         // If it's a new coin, do startup code. Do not remove in case other coins copy your code.
-        uint64_t difficulty_guess = 100;
+        uint64_t difficulty_guess = 600;
         if (timestamps.size() <= 12 ) {   return difficulty_guess;   }
         if ( timestamps.size()  < N +1 ) { N = timestamps.size()-1;  }
 
