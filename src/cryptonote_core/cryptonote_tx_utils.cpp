@@ -654,7 +654,7 @@ namespace cryptonote
     bl.iterations = 0;
     bl.hash_checkpoints = std::vector<crypto::hash>();
     crypto::hash hash;
-    epee::string_tools::hex_to_pod("300b14ee2d3be2c7aeca62a4bc240ea2e7d64d5f09fc0d6589a22279217dd460", hash);
+    epee::string_tools::hex_to_pod("302f625d28c819b2bcaae7e4d73dc4152c4f201b1951e221547b0d75e9d636ab", hash);
     bl.hash_checkpoints.push_back(hash);
     bl.hash_checkpoints.push_back(hash);
 

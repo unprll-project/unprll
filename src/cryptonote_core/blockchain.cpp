@@ -1216,9 +1216,6 @@ bool Blockchain::check_miner_specific(const cryptonote::block& block)
 //------------------------------------------------------------------
 bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proof_of_work, difficulty_type current_diff, uint64_t height)
 {
-  if (height == 0) {
-      return true;
-  }
   // 1. # of checkpoints (minus the first and last) must match iterations
   if ((block.iterations / config::HASH_CHECKPOINT_STEP) != (block.hash_checkpoints.size() - 2)) {
     MERROR_VER("Iteration mismatch");
@@ -1226,8 +1223,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
   }
 
   // 2. The last hash must be valid
-  // TODO: Fix Genesis
-  if (height != 0 && !check_hash(block.hash_checkpoints.back(), current_diff)) {
+  if (!check_hash(block.hash_checkpoints.back(), current_diff)) {
       MERROR_VER("Last hash mismatch");
       return false;
   }
