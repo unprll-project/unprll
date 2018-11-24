@@ -996,7 +996,7 @@ namespace cryptonote
      epee::math_helper::once_a_time_seconds<60*2, false> m_txpool_auto_relayer; //!< interval for checking re-relaying txpool transactions
      epee::math_helper::once_a_time_seconds<60*60*12, true> m_check_updates_interval; //!< interval for checking for new versions
      epee::math_helper::once_a_time_seconds<60*10, true> m_check_disk_space_interval; //!< interval for checking for disk space
-     epee::math_helper::once_a_time_seconds<10, true> m_broadcast_clearer; //!< interval for clearing broadcast messages
+     epee::math_helper::once_a_time_seconds<60*10, true> m_broadcast_clearer; //!< interval for clearing broadcast messages
 
      std::vector<std::string> m_messages; //!< stores broadcast messages
 
