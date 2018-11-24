@@ -1,7 +1,7 @@
 Unprll daemon internationalization
 ==================================
 
-The Unprll command line tools can be translated in various languages. If you wish to contribute and need help/support, contact the [Unprll Localization Workgroup on Taiga](https://taiga.getunprll.org/project/erciccione-unprll-localization/) or come chat on `#unprll-translations` (Freenode/IRC, riot/matrix, MatterMost)
+The Unprll command line tools can be translated in various languages. If you wish to contribute and need help/support, come chat on our social links
 
 ### Tools for translators
 

@@ -7,46 +7,31 @@ Portions Copyright (c) 2012-2013 The Cryptonote developers.
 ## Development resources
 
 - Web: [unprll.cash](https://unprll.cash)
-- Forum: [forum.unprll.cash](https://forum.unprll.cash)
-- Mail: [dev@unprll.cash](mailto:dev@unprll.cash)
 - GitHub: [https://github.com/unprll-project/unprll](https://github.com/unprll-project/unprll)
-- IRC: [#unprll-dev on Freenode](http://webchat.freenode.net/?randomnick=1&channels=%23unprll-dev&prompt=1&uio=d4)
 
 ## Vulnerability response
 
-- Our [Vulnerability Response Process](https://github.com/unprll-project/meta/blob/master/VULNERABILITY_RESPONSE_PROCESS.md) encourages responsible disclosure
-- We are also available via [HackerOne](https://hackerone.com/unprll)
+- Our [Vulnerability Response Process](https://github.com/unprll-project/unprll/blob/master/VULNERABILITY_RESPONSE_PROCESS.md) encourages responsible disclosure
 
-## Announcements
-
-You can subscribe to an [announcement listserv](https://lists.unprll.cash) to get critical announcements from the Unprll core team. The announcement list can be very helpful for knowing when software updates are needed.
-
-## Build
 ### IMPORTANT
 
-These builds are of the master branch, which is used for active development and can be either unstable or incompatible with release software. Please compile release branches.
+The master branch is for active development and can be either unstable or incompatible with release software. Please compile release branches for general use.
 
-| Operating System      | Processor | Status |
-| --------------------- | -------- |--------|
-| Ubuntu 16.04          |  i686    | [![Ubuntu 16.04 i686](https://build.unprll.cash/png?builder=unprll-static-ubuntu-i686)](https://build.unprll.cash/builders/unprll-static-ubuntu-i686)
-| Ubuntu 16.04          |  amd64   | [![Ubuntu 16.04 amd64](https://build.unprll.cash/png?builder=unprll-static-ubuntu-amd64)](https://build.unprll.cash/builders/unprll-static-ubuntu-amd64)
-| Ubuntu 16.04          |  armv7   | [![Ubuntu 16.04 armv7](https://build.unprll.cash/png?builder=unprll-static-ubuntu-arm7)](https://build.unprll.cash/builders/unprll-static-ubuntu-arm7)
-| Debian Stable         |  armv8   | [![Debian armv8](https://build.unprll.cash/png?builder=unprll-static-debian-armv8)](https://build.unprll.cash/builders/unprll-static-debian-armv8)
-| OSX 10.10             |  amd64   | [![OSX 10.10 amd64](https://build.unprll.cash/png?builder=unprll-static-osx-10.10)](https://build.unprll.cash/builders/unprll-static-osx-10.10)
-| OSX 10.11             |  amd64   | [![OSX 10.11 amd64](https://build.unprll.cash/png?builder=unprll-static-osx-10.11)](https://build.unprll.cash/builders/unprll-static-osx-10.11)
-| OSX 10.12             |  amd64   | [![OSX 10.12 amd64](https://build.unprll.cash/png?builder=unprll-static-osx-10.12)](https://build.unprll.cash/builders/unprll-static-osx-10.12)
-| FreeBSD 11            |  amd64   | [![FreeBSD 11 amd64](https://build.unprll.cash/png?builder=unprll-static-freebsd64)](https://build.unprll.cash/builders/unprll-static-freebsd64)
-| DragonFly BSD 4.6     |  amd64   | [![DragonFly BSD amd64](https://build.unprll.cash/png?builder=unprll-static-dragonflybsd-amd64)](https://build.unprll.cash/builders/unprll-static-dragonflybsd-amd64)
-| Windows (MSYS2/MinGW) |  i686    | [![Windows (MSYS2/MinGW) i686](https://build.unprll.cash/png?builder=unprll-static-win32)](https://build.unprll.cash/builders/unprll-static-win32)
-| Windows (MSYS2/MinGW) |  amd64   | [![Windows (MSYS2/MinGW) amd64](https://build.unprll.cash/png?builder=unprll-static-win64)](https://build.unprll.cash/builders/unprll-static-win64)
+## Supported Platforms
 
-## Coverage
-
-| Type      | Status |
-|-----------|--------|
-| Coverity  | [![Coverity Status](https://scan.coverity.com/projects/9657/badge.svg)](https://scan.coverity.com/projects/9657/)
-| Coveralls | [![Coveralls Status](https://coveralls.io/repos/github/unprll-project/unprll/badge.svg?branch=master)](https://coveralls.io/github/unprll-project/unprll?branch=master)
-| License   | [![License](https://img.shields.io/badge/license-BSD3-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+| Operating System      | Processor |
+| --------------------- | --------  |
+| Ubuntu 16.04          |  i686     |
+| Ubuntu 16.04          |  amd64    |
+| Ubuntu 16.04          |  armv7    |
+| Debian Stable         |  armv8    |
+| OSX 10.10             |  amd64    |
+| OSX 10.11             |  amd64    |
+| OSX 10.12             |  amd64    |
+| FreeBSD 11            |  amd64    |
+| DragonFly BSD 4.6     |  amd64    |
+| Windows (MSYS2/MinGW) |  i686     |
+| Windows (MSYS2/MinGW) |  amd64    |
 
 ## Introduction
 
@@ -62,7 +47,7 @@ Unprll is a private, secure, untraceable, decentralised digital currency. You ar
 
 This is the core implementation of Unprll. It is open source and completely free to use without restrictions, except for those specified in the license agreement below. There are no restrictions on anyone creating an alternative implementation of Unprll that uses the protocol and network in a compatible manner.
 
-As with many development projects, the repository on Github is considered to be the "staging" area for the latest changes. Before changes are merged into that branch on the main repository, they are tested by individual developers in their own branches, submitted as a pull request, and then subsequently tested by contributors who focus on testing and code reviews. That having been said, the repository should be carefully considered before using it in a production environment, unless there is a patch in the repository for a particular show-stopping issue you are experiencing. It is generally a better idea to use a tagged release for stability.
+As with many development projects, the repository on GitHub is considered to be the "staging" area for the latest changes. Before changes are merged into that branch on the main repository, they are tested by individual developers in their own branches, submitted as a pull request, and then subsequently tested by contributors who focus on testing and code reviews. That having been said, the repository should be carefully considered before using it in a production environment, unless there is a patch in the repository for a particular show-stopping issue you are experiencing. It is generally a better idea to use a tagged release for stability.
 
 **Anyone is welcome to contribute to Unprll's codebase!** If you have a fix or code change, feel free to submit it as a pull request directly to the "master" branch. In cases where the change is relatively small or does not affect other parts of the codebase it may be merged in immediately by any one of the collaborators. On the other hand, if the change is particularly large or complex, it is expected that it will be discussed at length either well in advance of the pull request being submitted, or even directly on the pull request.
 
@@ -70,9 +55,9 @@ As with many development projects, the repository on Github is considered to be 
 
 Unprll is a 100% community-sponsored endeavor. If you want to join our efforts, the easiest thing you can do is support the project financially. Both Unprll and Bitcoin donations can be made to **donate.unprll.cash** if using a client that supports the [OpenAlias](https://openalias.org) standard. Alternatively you can send ULL to the Unprll donation address via the `donate` command (type `help` in the command-line wallet for details).
 
-The Unprll donation address is: `44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A` (viewkey: `f359631075708155cc3d92a32b75a7d02a5dcf27756707b47a2b31b21c389501`)
+The Unprll donation address is: `UNP1Yn4gC4EBfxGByWr4CX8CLnvLRm3ZWEK7BEeiuwYe4SeVpqbRMZxKACWXQ1WCw3P2Zpt68rHZ94sehkF5o8Wn7NAC1PoBzh` (viewkey: `cae2b02f3a317b0ef61e694d899060f8434aef556bfe60239846533b52ab4608`)
 
-The Bitcoin donation address is: `1KTexdemPdxSBcG55heUuTjDRYqbC5ZL8H`
+The Bitcoin donation address is: `1EcmJ6ihauXUJegp8AmMKYAeB757Hm3mkx`
 
 ## License
 
@@ -84,12 +69,11 @@ If you want to help out, see [CONTRIBUTING](CONTRIBUTING.md) for a set of guidel
 
 ## Scheduled software upgrades
 
-Unprll uses a fixed-schedule software upgrade (hard fork) mechanism to implement new features. This means that users of Unprll (end users and service providers) should run current versions and upgrade their software on a regular schedule. Software upgrades occur during the months of April and October. The required software for these upgrades will be available prior to the scheduled date. Please check the repository prior to this date for the proper Unprll software version. Below is the historical schedule and the projected schedule for the next upgrade.
-Dates are provided in the format YYYY-MM-DD.
+Unprll will announce upcoming planned software upgrades (hard forks) 4 to 5 months in advance, and emergency hard forks 1 to 2 months in advance. This means users of Unprll (end users and service providers) should keep a watch of new releases and update software for continued operation. The required software for these upgrades will be available prior to the scheduled date. Please check the repository prior to this date for the proper Unprll software version.
 
 ## Release staging schedule and protocol
 
-Approximately three months prior to a scheduled software upgrade, a branch from Master will be created with the new release version tag. Pull requests that address bugs should then be made to both Master and the new release branch. Pull requests that require extensive review and testing (generally, optimizations and new features) should *not* be made to the release branch.
+Approximately three months prior to a scheduled software upgrade, a branch from master will be created with the new release version tag. Pull requests that address bugs should then be made to both master and the new release branch. Pull requests that require extensive review and testing (generally, optimizations and new features) should *not* be made to the release branch.
 
 ## Compiling Unprll from source
 
@@ -203,18 +187,17 @@ Tested on a Raspberry Pi Zero with a clean install of minimal Raspbian Stretch (
 
 * Install the dependencies for Unprll from the 'Debian' column in the table above.
 
-* Increase the system swap size:
+* Enable zram:
 ```
-	sudo /etc/init.d/dphys-swapfile stop  
-	sudo nano /etc/dphys-swapfile  
-	CONF_SWAPSIZE=1024  
-	sudo /etc/init.d/dphys-swapfile start  
+	sudo zramctl --find --size=1024M # Note the device name
+	sudo mkswap <device name>
+	sudo swapon <device name>
 ```
 * Clone unprll and checkout most recent release version:
 ```
         git clone https://github.com/unprll-project/unprll.git
 	cd unprll
-	git checkout tags/v0.13.0.4
+	git checkout tags/v0.1.0.0
 ```
 * Build:
 ```
@@ -234,13 +217,11 @@ Tested on a Raspberry Pi Zero with a clean install of minimal Raspbian Stretch (
 
 If you are using the older Raspbian Jessie image, compiling Unprll is a bit more complicated. The version of Boost available in the Debian Jessie repositories is too old to use with Unprll, and thus you must compile a newer version yourself. The following explains the extra steps, and has been tested on a Raspberry Pi 2 with a clean install of minimal Raspbian Jessie.
 
-* As before, `apt-get update && apt-get upgrade` to install all of the latest software, and increase the system swap size
-
+* As before, `apt-get update && apt-get upgrade` to install all of the latest software, and enable zram:
 ```
-	sudo /etc/init.d/dphys-swapfile stop  
-	sudo nano /etc/dphys-swapfile  
-	CONF_SWAPSIZE=1024  
-	sudo /etc/init.d/dphys-swapfile start  
+	sudo zramctl --find --size=1024M # Note the device name
+	sudo mkswap <device name>
+	sudo swapon <device name>
 ```
 
 * Then, install the dependencies for Unprll except `libunwind` and `libboost-all-dev`
@@ -264,56 +245,22 @@ If you are using the older Raspbian Jessie image, compiling Unprll is a bit more
 
 #### On Windows:
 
-Binaries for Windows are built on Windows using the MinGW toolchain within
-[MSYS2 environment](https://www.msys2.org). The MSYS2 environment emulates a
-POSIX system. The toolchain runs within the environment and *cross-compiles*
-binaries that can run outside of the environment as a regular Windows
-application.
+Binaries for Windows are built on GNU/Linux using the depends toolchain. The toolchain runs within the environment and *cross-compiles* binaries that can run outside of the environment as a regular Windows application.
 
-**Preparing the build environment**
+**Building**
 
-* Download and install the [MSYS2 installer](https://www.msys2.org), either the 64-bit or the 32-bit package, depending on your system.
-* Open the MSYS shell via the `MSYS2 Shell` shortcut
-* Update packages using pacman:  
-
-        pacman -Syuu  
-
-* Exit the MSYS shell using Alt+F4  
-* Edit the properties for the `MSYS2 Shell` shortcut changing "msys2_shell.bat" to "msys2_shell.cmd -mingw64" for 64-bit builds or "msys2_shell.cmd -mingw32" for 32-bit builds
-* Restart MSYS shell via modified shortcut and update packages again using pacman:  
-
-        pacman -Syuu  
-
-
-* Install dependencies:
-
-    To build for 64-bit Windows:
-
-        pacman -S mingw-w64-x86_64-toolchain make mingw-w64-x86_64-cmake mingw-w64-x86_64-boost mingw-w64-x86_64-openssl mingw-w64-x86_64-zeromq mingw-w64-x86_64-libsodium mingw-w64-x86_64-hidapi
-
-    To build for 32-bit Windows:
-
-        pacman -S mingw-w64-i686-toolchain make mingw-w64-i686-cmake mingw-w64-i686-boost mingw-w64-i686-openssl mingw-w64-i686-zeromq mingw-w64-i686-libsodium mingw-w64-i686-hidapi
-
-* Open the MingW shell via `MinGW-w64-Win64 Shell` shortcut on 64-bit Windows
-  or `MinGW-w64-Win64 Shell` shortcut on 32-bit Windows. Note that if you are
-  running 64-bit Windows, you will have both 64-bit and 32-bit MinGW shells.
-
-**Cloning**
-
+* Install the MinGW-w64 toolchain for your respective distribution.
 * To git clone, run:
 
         git clone --recursive https://github.com/unprll-project/unprll.git
-
-**Building**
 
 * Change to the cloned directory, run:
 
         cd unprll
 
-* If you would like a specific [version/tag](https://github.com/unprll-project/unprll/tags), do a git checkout for that version. eg. 'v0.13.0.0'. If you dont care about the version and just want binaries from master, skip this step:
+* If you would like a specific [version/tag](https://github.com/unprll-project/unprll/tags), do a git checkout for that version. eg. 'v0.1.0.0'. If you dont care about the version and just want binaries from master, skip this step:
 
-        git checkout v0.13.0.4
+        git checkout v0.11.0.0
 
 * If you are on a 64-bit system, run:
 
@@ -323,7 +270,7 @@ application.
 
         make release-static-win32
 
-* The resulting executables can be found in `build/release/bin`
+* The resulting executables can be found in `build/Windows/<branch>/release/bin`
 
 * **Optional**: to build Windows binaries suitable for debugging on a 64-bit system, run:
 
@@ -333,7 +280,7 @@ application.
 
         make debug-static-win32
 
-* The resulting executables can be found in `build/debug/bin`
+* The resulting executables can be found in `build/Windows/<branch>/debug/bin`
 
 ### On FreeBSD:
 
@@ -477,18 +424,6 @@ Packages are available for
 
 Installing a snap is very quick. Snaps are secure. They are isolated with all of their dependencies. Snaps also auto update when a new version is released.
 
-* Arch Linux (via [AUR](https://aur.archlinux.org/)):
-  - Stable release: [`unprll`](https://aur.archlinux.org/packages/unprll)
-  - Bleeding edge: [`unprll-git`](https://aur.archlinux.org/packages/unprll-git)
-
-* Void Linux:
-
-        xbps-install -S unprll
-
-* GuixSD
-
-        guix package -i unprll
-
 * Docker
 
         # Build using all available cores
@@ -504,11 +439,11 @@ Installing a snap is very quick. Snaps are secure. They are isolated with all of
         docker run -it -d -v /unprll/chain:/root/.unprll -v /unprll/wallet:/wallet -p 21149:21149 unprll
 
 * The build needs 3 GB space.
-* Wait one  hour or more
+* Wait one hour or more
 
 Packaging for your favorite distribution would be a welcome contribution!
 
-You can also cross-compile binaries on linux for windows and macos with the depends system. Go to contrib/depends and type:
+You can also cross-compile binaries on GNU/Linux for Windows and macOS with the depends system. Go to contrib/depends and type:
 
 * ```make HOST=x86_64-linux-gnu``` for 64-bit linux binaries.
 * ```make HOST=x86_64-w64-mingw32``` for 64-bit windows binaries. Requires: python3 nsis g++-mingw-w64-x86-64 wine1.6 bc
@@ -521,8 +456,6 @@ The required packages are the names for each toolchain on apt. Depending on your
 Then go back to the source dir and type for example for windows 64bit:
 
 * ```cmake -DCMAKE_TOOLCHAIN_FILE=`pwd`/contrib/depends/x86_64-w64-mingw32```
-
-Using depends might also be easier to compile Unprll on windows than using MSys2. Activate WSL (with, for example Ubuntu), install `build-essentials` and follow the depends steps as depicted above.
 
 ## Running unprlld
 
