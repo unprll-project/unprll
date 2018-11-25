@@ -154,6 +154,8 @@ public:
   bool send_broadcast(const std::string &message);
 
   bool sync_info();
+
+  bool pop_blocks(uint64_t num_blocks);
 };
 
 } // namespace daemonize
