@@ -1480,24 +1480,21 @@ namespace tools
       cryptonote::blobdata payment_id_blob;
 
       // TODO - should the whole thing fail because of one bad id?
-
-      if(!epee::string_tools::parse_hexstr_to_binbuff(payment_id_str, payment_id_blob))
+      if(payment_id_str.size() == 2 * sizeof(payment_id8))
       {
-        er.code = WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID;
-        er.message = "Payment ID has invalid format: " + payment_id_str;
-        return false;
-      }
-
-      if(sizeof(payment_id8) == payment_id_blob.size())
-      {
-        payment_id8 = *reinterpret_cast<const crypto::hash8*>(payment_id_blob.data());
-        memcpy(payment_id.data, payment_id8.data, 8);
-        memset(payment_id.data + 8, 0, 24);
+        r = epee::string_tools::hex_to_pod(payment_id_str, payment_id8);
       }
       else
       {
         er.code = WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID;
         er.message = "Payment ID has invalid size: " + payment_id_str;
+        return false;
+      }
+
+      if(!r)
+      {
+        er.code = WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID;
+        er.message = "Payment ID has invalid format: " + payment_id_str;
         return false;
       }
 
@@ -2347,23 +2344,19 @@ namespace tools
       ski.resize(req.signed_key_images.size());
       for (size_t n = 0; n < ski.size(); ++n)
       {
-        cryptonote::blobdata bd;
-
-        if(!epee::string_tools::parse_hexstr_to_binbuff(req.signed_key_images[n].key_image, bd) || bd.size() != sizeof(crypto::key_image))
+        if (!epee::string_tools::hex_to_pod(req.signed_key_images[n].key_image, ski[n].first))
         {
           er.code = WALLET_RPC_ERROR_CODE_WRONG_KEY_IMAGE;
           er.message = "failed to parse key image";
           return false;
         }
-        ski[n].first = *reinterpret_cast<const crypto::key_image*>(bd.data());
 
-        if(!epee::string_tools::parse_hexstr_to_binbuff(req.signed_key_images[n].signature, bd) || bd.size() != sizeof(crypto::signature))
+        if (!epee::string_tools::hex_to_pod(req.signed_key_images[n].signature, ski[n].second))
         {
           er.code = WALLET_RPC_ERROR_CODE_WRONG_SIGNATURE;
           er.message = "failed to parse signature";
           return false;
         }
-        ski[n].second = *reinterpret_cast<const crypto::signature*>(bd.data());
       }
       uint64_t spent = 0, unspent = 0;
       uint64_t height = m_wallet->import_key_images(ski, spent, unspent);
