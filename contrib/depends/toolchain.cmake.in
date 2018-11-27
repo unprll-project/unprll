@@ -5,7 +5,7 @@ SET(CMAKE_BUILD_TYPE release)
 SET(STATIC true)
 SET(UNBOUND_STATIC true)
 
-# where is the target environment 
+# where is the target environment
 SET(CMAKE_FIND_ROOT_PATH @prefix@ /usr)
 
 SET(ENV{PKG_CONFIG_PATH} @prefix@/lib/pkgconfig)
@@ -27,7 +27,7 @@ SET(ZMQ_LIB @prefix@/lib/libzmq.a)
 SET(BOOST_IGNORE_SYSTEM_PATHS_DEFAULT ON)
 SET(BOOST_IGNORE_SYSTEM_PATH ON)
 SET(BOOST_ROOT @prefix@)
-SET(BOOST_LIBRARYDIR @prefix@/lib)
+SET(BOOST_LIBRARY_DIRS @prefix@/lib)
 SET(BOOST_IGNORE_SYSTEM_PATHS_DEFAULT OFF)
 SET(BOOST_NO_SYSTEM_PATHS TRUE)
 SET(BOOST_USE_STATIC_LIBS TRUE)
