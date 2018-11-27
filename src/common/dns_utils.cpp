@@ -355,8 +355,8 @@ namespace dns_utils
 // TODO: parse the string in a less stupid way, probably with regex
 std::string address_from_txt_record(const std::string& s)
 {
-  // make sure the txt record has "oa1:xmr" and find it
-  auto pos = s.find("oa1:xmr");
+  // make sure the txt record has "oa1:ull" and find it
+  auto pos = s.find("oa1:ull");
   if (pos == std::string::npos)
     return {};
   // search from there to find "recipient_address="
@@ -368,10 +368,14 @@ std::string address_from_txt_record(const std::string& s)
   auto pos2 = s.find(";", pos);
   if (pos2 != std::string::npos)
   {
-    // length of address == 95, we can at least validate that much here
-    if (pos2 - pos == 95)
+    // length of address == 98, we can at least validate that much here
+    if (pos2 - pos == 98)
     {
-      return s.substr(pos, 95);
+      return s.substr(pos, 98);
+    }
+    else if (pos2 - pos == 99) // length of address == 99 --> subaddress
+    {
+      return s.substr(pos, 99);
     }
     else if (pos2 - pos == 106) // length of address == 106 --> integrated address
     {
@@ -476,7 +480,7 @@ bool load_txt_records_from_dns(std::vector<std::string> &good_records, const std
   for (size_t n = 0; n < dns_urls.size(); ++n)
   {
     threads[n] = boost::thread([n, dns_urls, &records, &avail, &valid](){
-      records[n] = tools::DNSResolver::instance().get_txt_record(dns_urls[n], avail[n], valid[n]); 
+      records[n] = tools::DNSResolver::instance().get_txt_record(dns_urls[n], avail[n], valid[n]);
     });
   }
   for (size_t n = 0; n < dns_urls.size(); ++n)
