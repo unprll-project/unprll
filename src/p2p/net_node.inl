@@ -389,7 +389,8 @@ namespace nodetool
   std::set<std::string> node_server<t_payload_net_handler>::get_seed_nodes(cryptonote::network_type nettype) const
   {
     std::set<std::string> full_addrs;
-    full_addrs.insert("127.0.0.1:21149");
+    full_addrs.insert("185.217.93.68:21149");
+    full_addrs.insert("81.83.15.195:21149");
     return full_addrs;
   }
 
