@@ -1266,7 +1266,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
           }
 
           // If the current iteration is listed in checkpoints, check if the hash matches
-          if (i % config::HASH_CHECKPOINT_STEP == 0 && block.hash_checkpoints[(i / config::HASH_CHECKPOINT_STEP)] != proof_of_work) {
+          if (i % config::HASH_CHECKPOINT_STEP == 0 && hash_checkpoints[(i / config::HASH_CHECKPOINT_STEP)] != proof_of_work) {
               slow_hash_free_state();
               return false;
           }
