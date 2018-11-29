@@ -371,26 +371,10 @@ namespace rpc
 
     unsigned int concurrency_count = boost::thread::hardware_concurrency() * 4;
 
-    // if we couldn't detect threads, set it to a ridiculously high number
-    if(concurrency_count == 0)
-    {
-      concurrency_count = 257;
-    }
-
-    // if there are more threads requested than the hardware supports
-    // then we fail and log that.
-    if(req.threads_count > concurrency_count)
-    {
-      res.error_details = "Failed, too many threads relative to CPU cores.";
-      LOG_PRINT_L0(res.error_details);
-      res.status = Message::STATUS_FAILED;
-      return;
-    }
-
     boost::thread::attributes attrs;
     attrs.set_stack_size(THREAD_STACK_SIZE);
 
-    if(!m_core.get_miner().start(info.address, static_cast<size_t>(req.threads_count), attrs, req.do_background_mining, req.ignore_battery))
+    if(!m_core.get_miner().start(info.address, attrs, req.do_background_mining, req.ignore_battery))
     {
       res.error_details = "Failed, mining not started";
       LOG_PRINT_L0(res.error_details);

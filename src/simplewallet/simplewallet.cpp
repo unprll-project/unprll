@@ -2265,7 +2265,7 @@ simple_wallet::simple_wallet()
 {
   m_cmd_binder.set_handler("start_mining",
                            boost::bind(&simple_wallet::start_mining, this, _1),
-                           tr("start_mining [<number_of_threads>] [bg_mining] [ignore_battery]"),
+                           tr("start_mining [bg_mining] [ignore_battery]"),
                            tr("Start mining in the daemon (bg_mining and ignore_battery are optional booleans)."));
   m_cmd_binder.set_handler("stop_mining",
                            boost::bind(&simple_wallet::stop_mining, this, _1),
@@ -4019,31 +4019,20 @@ bool simple_wallet::start_mining(const std::vector<std::string>& args)
 
   bool ok = true;
   size_t arg_size = args.size();
-  if(arg_size >= 3)
+  if(arg_size >= 2)
   {
     if (!parse_bool_and_use(args[2], [&](bool r) { req.ignore_battery = r; }))
       return true;
   }
-  if(arg_size >= 2)
+  if(arg_size >= 1)
   {
     if (!parse_bool_and_use(args[1], [&](bool r) { req.do_background_mining = r; }))
       return true;
   }
-  if(arg_size >= 1)
-  {
-    uint16_t num = 1;
-    ok = string_tools::get_xtype_from_string(num, args[0]);
-    ok = ok && 1 <= num;
-    req.threads_count = num;
-  }
-  else
-  {
-    req.threads_count = 1;
-  }
 
   if (!ok)
   {
-    fail_msg_writer() << tr("invalid arguments. Please use start_mining [<number_of_threads>] [do_bg_mining] [ignore_battery]");
+    fail_msg_writer() << tr("invalid arguments. Please use start_mining [do_bg_mining] [ignore_battery]");
     return true;
   }
 

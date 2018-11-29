@@ -86,7 +86,7 @@ namespace cryptonote
   namespace
   {
     const command_line::arg_descriptor<std::string> arg_extra_messages =  {"extra-messages-file", "Specify file for extra messages to include into coinbase transactions", "", true};
-    const command_line::arg_descriptor<std::string> arg_start_mining =    {"start-mining", "Specify wallet address to mining for", "", true};
+    const command_line::arg_descriptor<std::string> arg_start_mining =    {"start-mining", "Specify wallet address to mine for", "", true};
     const command_line::arg_descriptor<bool>        arg_bg_mining_enable =  {"bg-mining-enable", "enable/disable background mining", true, true};
     const command_line::arg_descriptor<bool>        arg_bg_mining_ignore_battery =  {"bg-mining-ignore-battery", "if true, assumes plugged in when unable to query system power status", false, true};
     const command_line::arg_descriptor<uint64_t>    arg_bg_mining_min_idle_interval_seconds =  {"bg-mining-min-idle-interval", "Specify min lookback interval in seconds for determining idle state", miner::BACKGROUND_MINING_DEFAULT_MIN_IDLE_INTERVAL_IN_SECONDS, true};
@@ -282,10 +282,9 @@ namespace cryptonote
     return m_threads_total;
   }
   //-----------------------------------------------------------------------------------------------------
-  bool miner::start(const account_public_address& adr, size_t threads_count, const boost::thread::attributes& attrs, bool do_background, bool ignore_battery)
+  bool miner::start(const account_public_address& adr, const boost::thread::attributes& attrs, bool do_background, bool ignore_battery)
   {
     m_mine_address = adr;
-    m_threads_total = static_cast<uint32_t>(threads_count);
     CRITICAL_REGION_LOCAL(m_threads_lock);
     if(is_mining())
     {
@@ -375,7 +374,7 @@ namespace cryptonote
       boost::thread::attributes attrs;
       attrs.set_stack_size(THREAD_STACK_SIZE);
 
-      start(m_mine_address, m_threads_total, attrs, get_is_background_mining_enabled(), get_ignore_battery());
+      start(m_mine_address, attrs, get_is_background_mining_enabled(), get_ignore_battery());
     }
   }
   //-----------------------------------------------------------------------------------------------------
