@@ -163,6 +163,7 @@ namespace cryptonote
       return false;
     }
     set_block_template(bl, di, height);
+    m_cumul_hashes = 0;
     return true;
   }
   //-----------------------------------------------------------------------------------------------------
