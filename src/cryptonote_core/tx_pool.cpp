@@ -666,7 +666,8 @@ namespace cryptonote
         // continue
         return true;
       }
-      txs.push_back(tx);
+      tx.set_hash(txid);
+      txs.push_back(std::move(tx));
       return true;
     }, true, include_unrelayed_txes);
   }
@@ -811,7 +812,7 @@ namespace cryptonote
       txi.dandelion_stem = include_sensitive_data ? meta.dandelion_stem : 0;
       txi.do_not_relay = meta.do_not_relay;
       txi.double_spend_seen = meta.double_spend_seen;
-      tx_infos.push_back(txi);
+      tx_infos.push_back(std::move(txi));
       return true;
     }, true, include_sensitive_data);
 
@@ -894,7 +895,7 @@ namespace cryptonote
       }
 
       const crypto::key_image& k_image = kee.first;
-      key_image_infos[k_image] = tx_hashes;
+      key_image_infos[k_image] = std::move(tx_hashes);
     }
     return true;
   }
