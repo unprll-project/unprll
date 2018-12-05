@@ -484,6 +484,10 @@ namespace cryptonote
         MERROR("Failed to parse tx from txpool");
         return false;
       }
+      else
+      {
+        tx.set_hash(id);
+      }
       tx_weight = meta.weight;
       fee = meta.fee;
       relayed = meta.relayed;
@@ -787,6 +791,7 @@ namespace cryptonote
         // continue
         return true;
       }
+      tx.set_hash(txid);
       txi.tx_json = obj_to_json_str(tx);
       txi.blob_size = bd->size();
       txi.weight = meta.weight;
@@ -855,14 +860,13 @@ namespace cryptonote
     m_blockchain.for_all_txpool_txes([&tx_infos, key_image_infos](const crypto::hash &txid, const txpool_tx_meta_t &meta, const cryptonote::blobdata *bd){
       cryptonote::rpc::tx_in_pool txi;
       txi.tx_hash = txid;
-      transaction tx;
-      if (!parse_and_validate_tx_from_blob(*bd, tx))
+      if (!parse_and_validate_tx_from_blob(*bd, txi.tx))
       {
         MERROR("Failed to parse tx from txpool");
         // continue
         return true;
       }
-      txi.tx = tx;
+      txi.tx.set_hash(txid);
       txi.blob_size = bd->size();
       txi.weight = meta.weight;
       txi.fee = meta.fee;
@@ -1034,21 +1038,23 @@ namespace cryptonote
   {
     struct transction_parser
     {
-      transction_parser(const cryptonote::blobdata &txblob, transaction &tx): txblob(txblob), tx(tx), parsed(false) {}
+      transction_parser(const cryptonote::blobdata &txblob, const crypto::hash &txid, transaction &tx): txblob(txblob), txid(txid), tx(tx), parsed(false) {}
       cryptonote::transaction &operator()()
       {
         if (!parsed)
         {
           if (!parse_and_validate_tx_from_blob(txblob, tx))
             throw std::runtime_error("failed to parse transaction blob");
+          tx.set_hash(txid);
           parsed = true;
         }
         return tx;
       }
       const cryptonote::blobdata &txblob;
+      const crypto::hash &txid;
       transaction &tx;
       bool parsed;
-    } lazy_tx(txblob, tx);
+    } lazy_tx(txblob, txid, tx);
 
     // If it's a Dandelion stem transaction, don't include it yet
     if (txd.dandelion_stem) {
