@@ -3320,6 +3320,7 @@ class Writer : base::NoCopy {
 
   Writer& construct(Logger* logger, bool needLock = true);
   Writer& construct(int count, const char* loggerIds, ...);
+  Writer& construct(const char *loggerId);
  protected:
   Level m_level;
   const char* m_file;
@@ -3334,6 +3335,7 @@ class Writer : base::NoCopy {
   friend class el::Helpers;
 
   void initializeLogger(const std::string& loggerId, bool lookup = true, bool needLock = true);
+  void initializeLogger(Logger *logger, bool needLock = true);
   void processDispatch();
   void triggerDispatch(void);
 };
