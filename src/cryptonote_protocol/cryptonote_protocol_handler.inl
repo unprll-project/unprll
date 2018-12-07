@@ -1392,6 +1392,7 @@ skip:
     m_dandelion_stem_selector.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::select_dandelion_stem, this));
     m_rate_resetter.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::reset_rate_map, this));
     m_invalid_blocks_resetter.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::reset_invalid_blocks_map, this));
+    m_standby_checker.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::check_standby_peers, this));
     return m_core.on_idle();
   }
   //------------------------------------------------------------------------------------------------------------------------
@@ -1493,6 +1494,19 @@ skip:
     return true;
   }
   //------------------------------------------------------------------------------------------------------------------------
+  bool t_cryptonote_protocol_handler<t_core>::check_standby_peers()
+  {
+    m_p2p->for_each_connection([&](cryptonote_connection_context& context, nodetool::peerid_type peer_id, uint32_t support_flags)->bool
+    {
+      if (context.m_state == cryptonote_connection_context::state_standby)
+      {
+        LOG_PRINT_CCONTEXT_L2("requesting callback");
+        ++context.m_callback_request_count;
+        m_p2p->request_callback(context);
+      }
+      return true;
+    });
+  //------------------------------------------------------------------------------------------------------------------------
   template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::handle_request_chain(int command, NOTIFY_REQUEST_CHAIN::request& arg, cryptonote_connection_context& context)
   {
@@ -1590,14 +1604,13 @@ skip:
     bool start_from_current_chain = false;
     if (!force_next_span)
     {
-      bool first = true;
-      while (1)
+      do
       {
         size_t nblocks = m_block_queue.get_num_filled_spans();
         size_t size = m_block_queue.get_data_size();
         if (nblocks < BLOCK_QUEUE_NBLOCKS_THRESHOLD || size < BLOCK_QUEUE_SIZE_THRESHOLD)
         {
-          if (!first)
+          if (context.m_state != cryptonote_connection_context::state_standby)
           {
             LOG_DEBUG_CC(context, "Block queue is " << nblocks << " and " << size << ", resuming");
           }
@@ -1620,10 +1633,9 @@ skip:
           break;
         }
 
-        if (first)
+        if (context.m_state != cryptonote_connection_context::state_standby)
         {
           LOG_DEBUG_CC(context, "Block queue is " << nblocks << " and " << size << ", pausing");
-          first = false;
           context.m_state = cryptonote_connection_context::state_standby;
         }
 
@@ -1637,13 +1649,8 @@ skip:
           return true;
         }
 
-        for (size_t n = 0; n < 50; ++n)
-        {
-          if (m_stopping)
-            return true;
-          boost::this_thread::sleep_for(boost::chrono::milliseconds(100));
-        }
-      }
+        return true;
+      } while(0);
       context.m_state = cryptonote_connection_context::state_synchronizing;
     }
 
