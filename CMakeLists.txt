@@ -942,8 +942,10 @@ endif()
 
 find_path(ZMQ_INCLUDE_PATH zmq.hpp)
 find_library(ZMQ_LIB zmq)
-find_library(PGM_LIBRARY pgm)
-find_library(NORM_LIBRARY norm)
+if(NOT DEPENDS)
+  find_library(PGM_LIBRARY pgm)
+  find_library(NORM_LIBRARY norm)
+endif()
 find_library(SODIUM_LIBRARY sodium)
 
 if(NOT ZMQ_INCLUDE_PATH)
