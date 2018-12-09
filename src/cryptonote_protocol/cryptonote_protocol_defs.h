@@ -294,7 +294,7 @@ namespace cryptonote
     struct request
     {
       std::string block_id;
-      size_t checkpoint;
+      uint64_t checkpoint;
 
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(block_id)
