@@ -1035,6 +1035,7 @@ namespace cryptonote
 
      bool m_fluffy_blocks_enabled;
      bool m_offline;
+     bool m_disable_broadcasts;
    };
 }
 

@@ -174,6 +174,10 @@ namespace cryptonote
   , "Run a program for each new block, '%s' will be replaced by the block hash"
   , ""
   };
+  const command_line::arg_descriptor<bool> arg_disable_broadcasts = {
+    "disable-broadcasts"
+  , "Do not print and rebroadcast network message broadcasts"
+  };
 
   //-----------------------------------------------------------------------------------------------
   core::core(i_cryptonote_protocol* pprotocol):
@@ -284,6 +288,7 @@ namespace cryptonote
     command_line::add_arg(desc, arg_disable_dns_checkpoints);
     command_line::add_arg(desc, arg_max_txpool_weight);
     command_line::add_arg(desc, arg_block_notify);
+    command_line::add_arg(desc, arg_disable_broadcasts);
 
     miner::init_options(desc);
     BlockchainDB::init_options(desc);
@@ -323,6 +328,7 @@ namespace cryptonote
     m_fluffy_blocks_enabled = !get_arg(vm, arg_no_fluffy_blocks);
     m_offline = get_arg(vm, arg_offline);
     m_disable_dns_checkpoints = get_arg(vm, arg_disable_dns_checkpoints);
+    m_disable_broadcasts = get_arg(vm, arg_disable_broadcasts);
     if (!command_line::is_arg_defaulted(vm, arg_fluffy_blocks))
       MWARNING(arg_fluffy_blocks.name << " is obsolete, it is now default");
 
@@ -1341,6 +1347,9 @@ namespace cryptonote
   //-----------------------------------------------------------------------------------------------
   bool core::show_broadcast_message(std::string message)
   {
+    if (m_disable_broadcasts) {
+        return false;
+    }
     if (std::find(std::begin(m_messages), std::end(m_messages), message) == std::end(m_messages)) {
         m_messages.push_back(message);
         MGINFO(message);
