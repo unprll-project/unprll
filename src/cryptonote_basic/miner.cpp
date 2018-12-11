@@ -186,18 +186,16 @@ namespace cryptonote
     if(m_last_hr_merge_time && is_mining())
     {
       m_cumul_hashes += m_hashes;
-      m_current_hash_rate = m_hashes * 1000 / ((misc_utils::get_tick_count() - m_last_hr_merge_time + 1));
+      m_current_hash_rate = m_hashes * 1000.0 / ((misc_utils::get_tick_count() - m_last_hr_merge_time + 1));
       CRITICAL_REGION_LOCAL(m_last_hash_rates_lock);
       m_last_hash_rates.push_back(m_current_hash_rate);
       if(m_last_hash_rates.size() > 19)
         m_last_hash_rates.pop_front();
       if(m_do_print_hashrate)
       {
-        uint64_t total_hr = std::accumulate(m_last_hash_rates.begin(), m_last_hash_rates.end(), 0);
-        float hr = static_cast<float>(total_hr)/static_cast<float>(m_last_hash_rates.size());
-        const auto flags = std::cout.flags();
-        const auto precision = std::cout.precision();
-        std::cout << "Hashrate: " << std::setprecision(4) << std::fixed << hr << flags << precision << " Iterations:" << m_cumul_hashes << ENDL;
+        double total_hr = std::accumulate(m_last_hash_rates.begin(), m_last_hash_rates.end(), 0.0);
+        double hr = total_hr / static_cast<double>(m_last_hash_rates.size());
+        std::cout << "Hashrate: " << std::setprecision(4) << std::fixed << hr << " Iterations:" << m_cumul_hashes << ENDL;
       }
     }
     m_last_hr_merge_time = misc_utils::get_tick_count();

@@ -134,16 +134,16 @@ namespace cryptonote
     i_miner_handler* m_phandler;
     account_public_address m_mine_address;
     epee::math_helper::once_a_time_seconds<5> m_update_block_template_interval;
-    epee::math_helper::once_a_time_seconds<2> m_update_merge_hr_interval;
+    epee::math_helper::once_a_time_seconds<60> m_update_merge_hr_interval;
     std::vector<blobdata> m_extra_messages;
     miner_config m_config;
     std::string m_config_folder_path;
     std::atomic<uint64_t> m_last_hr_merge_time;
     std::atomic<uint64_t> m_hashes;
     std::atomic<uint64_t> m_cumul_hashes;
-    std::atomic<uint64_t> m_current_hash_rate;
+    std::atomic<double> m_current_hash_rate;
     epee::critical_section m_last_hash_rates_lock;
-    std::list<uint64_t> m_last_hash_rates;
+    std::list<double> m_last_hash_rates;
     bool m_do_print_hashrate;
     bool m_do_mining;
 
