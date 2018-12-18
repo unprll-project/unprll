@@ -329,7 +329,7 @@ bool t_rpc_command_executor::show_difficulty() {
   return true;
 }
 
-static std::string get_mining_speed(uint64_t hr)
+static std::string get_mining_speed(double hr)
 {
   if (hr>1e9) return (boost::format("%.2f GH/s") % (hr/1e9)).str();
   if (hr>1e6) return (boost::format("%.2f MH/s") % (hr/1e6)).str();

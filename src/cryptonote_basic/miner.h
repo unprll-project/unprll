@@ -69,7 +69,7 @@ namespace cryptonote
     bool set_block_template(const block& bl, const difficulty_type& diffic, uint64_t height);
     bool on_block_chain_update();
     bool start(const account_public_address& adr, const boost::thread::attributes& attrs, bool do_background = false, bool ignore_battery = false);
-    uint64_t get_speed() const;
+    double get_speed() const;
     uint32_t get_threads_count() const;
     void send_stop_signal();
     bool stop();
@@ -139,7 +139,7 @@ namespace cryptonote
     miner_config m_config;
     std::string m_config_folder_path;
     std::atomic<uint64_t> m_last_hr_merge_time;
-    std::atomic<uint64_t> m_hashes;
+    double m_hashes;
     std::atomic<uint64_t> m_cumul_hashes;
     std::atomic<double> m_current_hash_rate;
     epee::critical_section m_last_hash_rates_lock;

@@ -320,7 +320,7 @@ namespace cryptonote
     return true;
   }
   //-----------------------------------------------------------------------------------------------------
-  uint64_t miner::get_speed() const
+  double miner::get_speed() const
   {
     if(is_mining()) {
       return m_current_hash_rate;
