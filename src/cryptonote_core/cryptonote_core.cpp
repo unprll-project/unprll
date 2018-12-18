@@ -933,6 +933,40 @@ namespace cryptonote
 
     CATCH_ENTRY_L0("core::handle_incoming_txs()", false);
   }
+  //---------------------------------------------------------------------------------
+  bool core::clear_dandelion_embargo()
+  {
+    std::vector<std::pair<crypto::hash, cryptonote::blobdata>> move_to_fluff;
+    m_blockchain_storage.for_all_txpool_txes([this, &move_to_fluff](const crypto::hash &txid, const txpool_tx_meta_t &meta, const cryptonote::blobdata *blob) {
+      uint64_t tx_age = time(nullptr) - meta.receive_time;
+
+      if(meta.dandelion_stem && tx_age > config::DANDELION_TX_EMBARGO_PERIOD)
+      {
+        LOG_PRINT_L1("Tx " << txid << " is entering fluff mode due to embargo timeout: " << tx_age << " seconds");
+        move_to_fluff.push_back(std::pair<crypto::hash, cryptonote::blobdata>(txid, *blob));
+      }
+      return true;
+    }, true);
+
+    if (!move_to_fluff.empty())
+    {
+      for (const std::pair<crypto::hash, cryptonote::blobdata> &tx: move_to_fluff)
+      {
+          m_mempool.enable_dandelion_fluff(tx.first);
+      }
+      cryptonote_connection_context fake_context = AUTO_VAL_INIT(fake_context);
+      tx_verification_context tvc = AUTO_VAL_INIT(tvc);
+      NOTIFY_NEW_TRANSACTIONS::request r;
+      r.dandelion = false;
+      for (auto it = move_to_fluff.begin(); it != move_to_fluff.end(); ++it)
+      {
+        r.txs.push_back(it->second);
+      }
+      get_protocol()->relay_transactions(r, fake_context);
+      m_mempool.set_relayed(move_to_fluff);
+    }
+    return true;
+  }
   //-----------------------------------------------------------------------------------------------
   bool core::handle_incoming_tx(const blobdata& tx_blob, tx_verification_context& tvc, bool keeped_by_block, bool relayed, bool do_not_relay)
   {
@@ -1538,6 +1572,7 @@ namespace cryptonote
     m_check_updates_interval.do_call(boost::bind(&core::check_updates, this));
     m_check_disk_space_interval.do_call(boost::bind(&core::check_disk_space, this));
     m_broadcast_clearer.do_call(boost::bind(&core::clear_broadcast_messages, this));
+    m_clear_dandelion_embargo_interval.do_call(boost::bind(&core::clear_dandelion_embargo, this));
     m_miner.on_idle();
     m_mempool.on_idle();
     return true;

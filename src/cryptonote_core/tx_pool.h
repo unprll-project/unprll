@@ -468,13 +468,6 @@ namespace cryptonote
     bool remove_stuck_transactions();
 
     /**
-     * @brief move dandelion stem transactions out of embargo
-     *
-     * @return true
-     */
-    bool clear_dandelion_embargo();
-
-    /**
      * @brief check if a transaction in the pool has a given spent key image
      *
      * @param key_im the spent key image to look for
@@ -579,7 +572,6 @@ private:
     //TODO: this time should be a named constant somewhere, not hard-coded
     //! interval on which to check for stale/"stuck" transactions
     epee::math_helper::once_a_time_seconds<30> m_remove_stuck_tx_interval;
-    epee::math_helper::once_a_time_seconds<30> m_clear_dandelion_embargo_interval;
 
     //TODO: look into doing this better
     //!< container for transactions organized by fee per size and receive time

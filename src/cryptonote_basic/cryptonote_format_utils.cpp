@@ -988,7 +988,7 @@ namespace cryptonote
     for(auto& th: b.tx_hashes)
       txs_ids.push_back(th);
 
-    std::sort(txs_ids.begin(), txs_ids.end(), [](crypto::hash& a, crypto::hash& b) {
+    std::sort(txs_ids.begin(), txs_ids.end(), [](crypto::hash a, crypto::hash b) {
         return std::memcmp(&a, &b, sizeof(crypto::hash));
     });
 

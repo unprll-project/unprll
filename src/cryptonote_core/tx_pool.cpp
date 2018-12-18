@@ -510,7 +510,6 @@ namespace cryptonote
   void tx_memory_pool::on_idle()
   {
     m_remove_stuck_tx_interval.do_call([this](){return remove_stuck_transactions();});
-    m_clear_dandelion_embargo_interval.do_call([this](){return clear_dandelion_embargo();});
   }
   //---------------------------------------------------------------------------------
   sorted_tx_container::iterator tx_memory_pool::find_tx_in_sorted_container(const crypto::hash& id) const
@@ -577,34 +576,6 @@ namespace cryptonote
           MWARNING("Failed to remove stuck transaction: " << txid);
           // ignore error
         }
-      }
-      ++m_cookie;
-    }
-    return true;
-  }
-  //---------------------------------------------------------------------------------
-  bool tx_memory_pool::clear_dandelion_embargo()
-  {
-    CRITICAL_REGION_LOCAL(m_transactions_lock);
-    CRITICAL_REGION_LOCAL1(m_blockchain);
-    std::unordered_set<crypto::hash> move_to_fluff;
-    m_blockchain.for_all_txpool_txes([this, &move_to_fluff](const crypto::hash &txid, const txpool_tx_meta_t &meta, const cryptonote::blobdata*) {
-      uint64_t tx_age = time(nullptr) - meta.receive_time;
-
-      if(meta.dandelion_stem && tx_age > config::DANDELION_TX_EMBARGO_PERIOD)
-      {
-        LOG_PRINT_L1("Tx " << txid << " is entering fluff mode due to embargo timeout: " << tx_age << " seconds");
-        move_to_fluff.insert(txid);
-      }
-      return true;
-    }, false);
-
-    if (!move_to_fluff.empty())
-    {
-      LockedTXN lock(m_blockchain);
-      for (const crypto::hash &txid: move_to_fluff)
-      {
-          enable_dandelion_fluff(txid);
       }
       ++m_cookie;
     }

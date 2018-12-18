@@ -138,6 +138,13 @@ namespace cryptonote
      bool handle_incoming_txs(const std::vector<blobdata>& tx_blobs, std::vector<tx_verification_context>& tvc, bool keeped_by_block, bool relayed, bool do_not_relay);
 
      /**
+      * @brief move dandelion stem transactions out of embargo
+      *
+      * @return true
+      */
+     bool clear_dandelion_embargo();
+
+     /**
       * @brief handles an incoming block
       *
       * periodic update to checkpoints is triggered here
@@ -997,6 +1004,7 @@ namespace cryptonote
      epee::math_helper::once_a_time_seconds<60*60*12, true> m_check_updates_interval; //!< interval for checking for new versions
      epee::math_helper::once_a_time_seconds<60*10, true> m_check_disk_space_interval; //!< interval for checking for disk space
      epee::math_helper::once_a_time_seconds<60*10, true> m_broadcast_clearer; //!< interval for clearing broadcast messages
+     epee::math_helper::once_a_time_seconds<30> m_clear_dandelion_embargo_interval; //!< interval for clearing Dandelion embargo
 
      std::vector<std::string> m_messages; //!< stores broadcast messages
 
