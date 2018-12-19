@@ -3875,7 +3875,7 @@ void Blockchain::block_longhash_worker(uint64_t height, const std::vector<block>
     if (m_cancel)
        break;
     crypto::hash id = get_block_hash(block);
-    crypto::hash pow = get_block_longhash(block, height++);
+    crypto::hash pow = block.hash_checkpoints.back();
     map.emplace(id, pow);
   }
 
