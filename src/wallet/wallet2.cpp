@@ -10514,9 +10514,6 @@ std::vector<std::pair<crypto::key_image, crypto::signature>> wallet2::export_key
   {
     const transfer_details &td = m_transfers[n];
 
-    crypto::hash hash;
-    crypto::cn_fast_hash(&td.m_key_image, sizeof(td.m_key_image), hash);
-
     // get ephemeral public key
     const cryptonote::tx_out &out = td.m_tx.vout[td.m_internal_output_index];
     THROW_WALLET_EXCEPTION_IF(out.target.type() != typeid(txout_to_key), error::wallet_internal_error,
