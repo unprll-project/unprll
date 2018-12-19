@@ -1234,6 +1234,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
   // Copy hash_checkpoints and iterations, and reset iterations to 0.
   std::vector<crypto::hash> hash_checkpoints = block.hash_checkpoints;
   uint32_t iterations = block.iterations;
+  crypto::hash block_id = get_block_hash(block);
 
   block.hash_checkpoints.clear();
   block.iterations = 0;
@@ -1254,6 +1255,15 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
   }
   // Remove existing threads
   m_threads.clear();
+
+  // If we're not at a checkpoint and we're within checkpoints, we can skip
+  // the costly verification
+  bool is_a_checkpoint;
+  // Assuming the code got through to here, checkpoints have passed correctly
+  m_checkpoints.check_block(height, block_id, is_a_checkpoint);
+  if (!is_a_checkpoint && m_checkpoints.is_in_checkpoint_zone(height)) {
+      return true;
+  }
 
   // TODO FIXME Move all slow_hash_free_state calls into one place
   if (iterations < config::HASH_CHECKPOINT_STEP) {
@@ -3449,6 +3459,10 @@ leave:
 
   crypto::hash proof_of_work = null_hash;
 
+  // FIXME: While we don't check the whole proof-of-work in Unprll (until
+  // checkpoints), we do the preliminary checks to make sure the PoW is still
+  // valid. Is this warning from Monero still applicable?
+  //
   // Formerly the code below contained an if loop with the following condition
   // !m_checkpoints.is_in_checkpoint_zone(get_current_blockchain_height())
   // however, this caused the daemon to not bother checking PoW for blocks

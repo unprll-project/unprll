@@ -156,7 +156,7 @@ namespace config
 
   // Unprll specific
   uint64_t const HASH_CHECKPOINT_STEP = 10; // hashes between each checkpoint
-  double const BLOCK_VALID_THRESHOLD = 0.20; // 20% of all hash checkpoints must verify correctly
+  double const BLOCK_VALID_THRESHOLD = 0.10; // 20% of all hash checkpoints must verify correctly
 
   // Dandelion config
   uint8_t const DANDELION_TX_EMBARGO_PERIOD = 30;
