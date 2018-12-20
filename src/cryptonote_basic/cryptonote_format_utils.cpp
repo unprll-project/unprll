@@ -987,8 +987,9 @@ namespace cryptonote
     std::vector<crypto::hash> txs_ids;
     for(auto& th: b.tx_hashes)
       txs_ids.push_back(th);
-
-    if (b.minor_version == 9) {
+    
+    //version 10 fixes the segmetation fault but there is an assertion for the old one,9 
+    if (b.minor_version == 10) {
         std::sort(txs_ids.begin(), txs_ids.end(), [](crypto::hash a, crypto::hash b) {
             return std::memcmp(&a, &b, sizeof(crypto::hash));
         });
