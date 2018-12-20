@@ -988,9 +988,16 @@ namespace cryptonote
     for(auto& th: b.tx_hashes)
       txs_ids.push_back(th);
 
-    std::sort(txs_ids.begin(), txs_ids.end(), [](crypto::hash a, crypto::hash b) {
-        return std::memcmp(&a, &b, sizeof(crypto::hash));
-    });
+    if (b.minor_version == 9) {
+        std::sort(txs_ids.begin(), txs_ids.end(), [](crypto::hash a, crypto::hash b) {
+            return std::memcmp(&a, &b, sizeof(crypto::hash));
+        });
+    } else {
+        // Due to segmentation faults
+        std::sort(txs_ids.begin(), txs_ids.end(), [](crypto::hash a, crypto::hash b) {
+            return std::memcmp(&a, &b, sizeof(crypto::hash)) < 0;
+        });
+    }
 
     crypto::hash tree_root_hash = null_hash;
 

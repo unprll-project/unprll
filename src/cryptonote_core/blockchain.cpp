@@ -95,7 +95,9 @@ static const struct {
   { 1, 0, 0, 0 },
   // version 9 from the start of the blockchain
   // This is to enable all Monero features from genesis
-  { 9, 1, 0, 1 }
+  { 9, 1, 0, 1 },
+  // version 10 fixes a segfault with generating the mining blob
+  { 10, 3000, 0, 1545301804804 }
 };
 static const uint64_t mainnet_hard_fork_version_1_till = 1;
 
@@ -107,8 +109,8 @@ static const struct {
 } testnet_hard_forks[] = {
     // version 1 for genesis
     { 1, 0, 0, 0 },
-    // version 9 from the start of the chain
-    { 9, 1, 0, 1 },
+    // version 10 from the start of the chain
+    { 10, 1, 0, 1 },
 };
 static const uint64_t testnet_hard_fork_version_1_till = 1;
 
@@ -121,8 +123,8 @@ static const struct {
   // version 1 for genesis
   { 1, 0, 0, 0 },
 
-  // version 9 from the start of the chain
-  { 9, 1, 0, 1 },
+  // version 10 from the start of the chain
+  { 10, 1, 0, 1 },
 };
 
 //------------------------------------------------------------------
