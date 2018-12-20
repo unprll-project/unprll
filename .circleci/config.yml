@@ -1,0 +1,31 @@
+version: 2
+jobs:
+  build:
+    steps:
+      - checkout
+      - restore_cache:
+          key: deps-{{ checksum "contrib/depends/packages/packages.mk" }}
+      - run:
+          name: Update Index
+          command: apt update
+      - run:
+          name: Install Dependencies
+          command: apt install build-essential cmake pkg-config libtool automake git curl gperf gcc-aarch64-linux-gnu g++-aarch64-linux-gnu mingw-w64 zip
+      - run:
+          name: Compile depends environment
+          command: make toolchain-linux-x86_64
+      - save_cache:
+          key: deps-{{ checksum "contrib/depends/packages/packages.mk" }}
+          paths:
+            - "contrib/depends"
+      - run:
+          name: Build
+          command: make release-static-linux-x86_64
+      - store_artifacts:
+          path: build/Linux-x86_64/master/release/bin
+          destination: linux-x86_64
+workflows:
+  version: 2
+  commit:
+    jobs:
+      - build
