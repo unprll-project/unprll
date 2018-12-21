@@ -1,36 +1,118 @@
+common: &common
+    docker:
+        - image: ubuntu:16.04
+
+steps:
+    update: &update
+        run:
+            name: Update Index
+            command: apt update
+    install_deps: &install_deps
+        run:
+            name: Install Dependencies
+            command: apt install -y ca-certificates build-essential cmake pkg-config libtool automake git curl gperf gcc-aarch64-linux-gnu g++-aarch64-linux-gnu mingw-w64 zip
+    submodules: &submodules
+        run:
+            name: Initialize submodules
+            command: git submodule init && git submodule update
+
 version: 2
 jobs:
-  build:
-    docker:
-      - image: ubuntu:16.04
-    steps:
-      - run:
-          name: Update Index
-          command: apt update
-      - run:
-          name: Install Dependencies
-          command: apt install -y ca-certificates build-essential cmake pkg-config libtool automake git curl gperf gcc-aarch64-linux-gnu g++-aarch64-linux-gnu mingw-w64 zip
-      - checkout
-      - run:
-          name: Initialize submodules
-          command: git submodule init && git submodule update
-      - restore_cache:
-          key: deps-{{ checksum "contrib/depends/packages/packages.mk" }}
-      - run:
-          name: Compile depends environment
-          command: make toolchain-linux-x86_64
-      - save_cache:
-          key: deps-{{ checksum "contrib/depends/packages/packages.mk" }}
-          paths:
-            - "contrib/depends"
-      - run:
-          name: Build
-          command: make release-static-linux-x86_64
-      - store_artifacts:
-          path: build/Linux-x86_64/master/release/bin
-          destination: linux-x86_64
+    build_linux_x86_64:
+        <<: *common
+        steps:
+            - <<: *update
+            - <<: *install_deps
+            - checkout
+            - <<: *submodules
+            - restore_cache:
+                key: deps-linux-x86_64-{{ checksum "contrib/depends/packages/packages.mk" }}
+            - run:
+                name: Compile depends environment
+                command: make toolchain-linux-x86_64
+            - save_cache:
+                key: deps-linux-x86_64-{{ checksum "contrib/depends/packages/packages.mk" }}
+                paths:
+                    - "contrib/depends"
+            - run:
+                name: Build
+                command: make release-static-linux-x86_64
+            - run:
+                name: Package Binaries
+                command: |
+                    tar cvJf unprll-linux-x86_64.tar.xz build/Linux-x86_64/$CIRCLE_BRANCH/release/bin/*
+                    mkdir tmp
+                    mv unprll-linux-x86_64.tar.xz tmp
+                    cd tmp
+                    sha256sum unprll-linux-x86_64.tar.xz > unprll-linux-x86_64.tar.xz.sha256
+            - store_artifacts:
+                path: tmp
+                destination: linux-x86_64
+    build_windows_x86_64:
+        <<: *common
+        steps:
+            - <<: *update
+            - <<: *install_deps
+            - checkout
+            - <<: *submodules
+            - restore_cache:
+                key: deps-windows-x86_64-{{ checksum "contrib/depends/packages/packages.mk" }}
+            - run:
+                name: Compile depends environment
+                command: make toolchain-windows-x86_64
+            - save_cache:
+                key: deps-windows-x86_64-{{ checksum "contrib/depends/packages/packages.mk" }}
+                paths:
+                    - "contrib/depends"
+            - run:
+                name: Build
+                command: make release-static-win64
+            - run:
+                name: Package Binaries
+                command: |
+                    zip unprll-windows-x86_64.zip build/Windows-x86_64/$CIRCLE_BRANCH/release/bin/*
+                    mkdir tmp
+                    mv unprll-windows-x86_64.zip tmp
+                    cd tmp
+                    sha256sum unprll-windows-x86_64.zip > unprll-windows-x86_64.zip.sha256
+            - store_artifacts:
+                path: tmp
+                destination: windows-x86_64
+    build_linux_armv8:
+        <<: *common
+        steps:
+            - <<: *update
+            - <<: *install_deps
+            - checkout
+            - <<: *submodules
+            - restore_cache:
+                key: deps-linux-armv8-{{ checksum "contrib/depends/packages/packages.mk" }}
+            - run:
+                name: Compile depends environment
+                command: make toolchain-linux-armv8
+            - save_cache:
+                key: deps-linux-armv8-{{ checksum "contrib/depends/packages/packages.mk" }}
+                paths:
+                    - "contrib/depends"
+            - run:
+                name: Build
+                command: make release-static-linux-armv8
+            - run:
+                name: Package Binaries
+                command: |
+                    tar cvJf unprll-linux-armv8.tar.xz build/Linux-ARMv8/$CIRCLE_BRANCH/release/bin/*
+                    mkdir tmp
+                    mv unprll-linux-armv8.tar.xz tmp
+                    cd tmp
+                    sha256sum unprll-linux-armv8.tar.xz > unprll-linux-armv8.tar.xz.sha256
+            - store_artifacts:
+                path: tmp
+                destination: linux-armv8
+
 workflows:
-  version: 2
-  commit:
-    jobs:
-      - build
+    version: 2
+    commit:
+        jobs:
+            - build_linux_x86_64
+            - build_linux_armv8
+            - build_windows_x86_64

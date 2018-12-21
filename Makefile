@@ -104,7 +104,7 @@ release-static-android: toolchain-linux-android
 
 release-static-linux-armv8: toolchain-linux-armv8
 	mkdir -p build/Linux-ARMv8/$(subbuilddir)/release
-	cd build/Linux-ARMv8/$(subbuilddir)/release && cmake -D BUILD_TESTS=OFF -D ARCH="armv8-a" -D STATIC=ON -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-armv8" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/aarch64-linux-gnu/share/toolchain.cmake $(topdir) && $(MAKE)
+	cd build/Linux-ARMv8/$(subbuilddir)/release && cmake -D BUILD_TESTS=OFF -D ARCH="armv8-a" -D STATIC=ON -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-armv8" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/aarch64-linux-gnu/share/toolchain.cmake -D THREADS_PTHREAD_ARG="-lpthread" $(topdir) && $(MAKE)
 
 release-static-linux-x86_64: toolchain-linux-x86_64
 	mkdir -p build/Linux-x86_64/$(subbuilddir)/release
