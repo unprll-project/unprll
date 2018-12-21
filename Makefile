@@ -108,7 +108,7 @@ release-static-linux-armv8: toolchain-linux-armv8
 
 release-static-linux-x86_64: toolchain-linux-x86_64
 	mkdir -p build/Linux-x86_64/$(subbuilddir)/release
-	cd build/Linux-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-x64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-linux-gnu/share/toolchain.cmake $(topdir) && $(MAKE)
+	cd build/Linux-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-x64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-linux-gnu/share/toolchain.cmake -D THREADS_PTHREAD_ARG="-lpthread" $(topdir) && $(MAKE)
 
 release-static-freebsd-x86_64:
 	$(error FreeBSD cross-compilation is not supported at the moment)
