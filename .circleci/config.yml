@@ -113,6 +113,15 @@ workflows:
     version: 2
     commit:
         jobs:
-            - build_linux_x86_64
-            - build_linux_armv8
-            - build_windows_x86_64
+            - build_linux_x86_64:
+                filters:
+                    branches:
+                        only: /.+-v[0-9]\.[0-9]/
+            - build_linux_armv8:
+                filters:
+                    branches:
+                        only: /.+-v[0-9]\.[0-9]/
+            - build_windows_x86_64:
+                filters:
+                    branches:
+                        only: /.+-v[0-9]\.[0-9]/
