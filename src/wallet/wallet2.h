@@ -1269,6 +1269,9 @@ namespace tools
     void setup_new_blockchain();
     void create_keys_file(const std::string &wallet_, bool watch_only, const epee::wipeable_string &password, bool create_address_file);
 
+    std::string get_rpc_status(const std::string &s) const;
+    void throw_on_rpc_response_error(const boost::optional<std::string> &status, const char *method) const;
+
     cryptonote::account_base m_account;
     boost::optional<epee::net_utils::http::login> m_daemon_login;
     std::string m_daemon_address;
