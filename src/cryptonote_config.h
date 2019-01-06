@@ -130,6 +130,7 @@
 #define HF_VERSION_PER_BYTE_FEE                 8
 #define HF_VERSION_MIN_MIXIN_12                 8
 #define HF_VERSION_BLOCK_TIME_REDUCTION         11
+#define HF_VERSION_SMALLER_BP                   12
 
 #define PER_KB_FEE_QUANTIZATION_DECIMALS        8
 
