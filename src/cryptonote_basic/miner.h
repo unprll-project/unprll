@@ -50,7 +50,7 @@ namespace cryptonote
 
   struct i_miner_handler
   {
-    virtual bool handle_block_found(block& b) = 0;
+    virtual bool handle_block_found(block& b, crypto::signature& miner_sign) = 0;
     virtual bool get_block_template(block& b, const account_public_address& adr, difficulty_type& diffic, uint64_t& height, uint64_t& expected_reward, const blobdata& ex_nonce) = 0;
   protected:
     ~i_miner_handler(){};
@@ -68,7 +68,7 @@ namespace cryptonote
     static void init_options(boost::program_options::options_description& desc);
     bool set_block_template(const block& bl, const difficulty_type& diffic, uint64_t height);
     bool on_block_chain_update();
-    bool start(const account_public_address& adr, const boost::thread::attributes& attrs, bool do_background = false, bool ignore_battery = false);
+    bool start(const account_public_address& adr, const crypto::secret_key& miner_key, const boost::thread::attributes& attrs, bool do_background = false, bool ignore_battery = false);
     uint64_t get_speed() const;
     uint32_t get_threads_count() const;
     void send_stop_signal();
@@ -144,6 +144,7 @@ namespace cryptonote
     std::atomic<double> m_current_hash_rate;
     epee::critical_section m_last_hash_rates_lock;
     std::list<double> m_last_hash_rates;
+    crypto::secret_key m_miner_key;
     bool m_do_print_hashrate;
     bool m_do_mining;
 

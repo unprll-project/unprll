@@ -281,7 +281,7 @@ namespace cryptonote
     return m_threads_total;
   }
   //-----------------------------------------------------------------------------------------------------
-  bool miner::start(const account_public_address& adr, const boost::thread::attributes& attrs, bool do_background, bool ignore_battery)
+  bool miner::start(const account_public_address& adr, const crypto::secret_key& miner_key, const boost::thread::attributes& attrs, bool do_background, bool ignore_battery)
   {
     m_mine_address = adr;
     CRITICAL_REGION_LOCAL(m_threads_lock);
@@ -307,6 +307,7 @@ namespace cryptonote
     set_is_background_mining_enabled(do_background);
     set_ignore_battery(ignore_battery);
 
+    m_miner_key = miner_key;
     m_threads.push_back(boost::thread(attrs, boost::bind(&miner::worker_thread, this)));
 
     LOG_PRINT_L0("Mining has started, good luck!");
@@ -368,13 +369,6 @@ namespace cryptonote
   //-----------------------------------------------------------------------------------------------------
   void miner::on_synchronized()
   {
-    if(m_do_mining)
-    {
-      boost::thread::attributes attrs;
-      attrs.set_stack_size(THREAD_STACK_SIZE);
-
-      start(m_mine_address, attrs, get_is_background_mining_enabled(), get_ignore_battery());
-    }
   }
   //-----------------------------------------------------------------------------------------------------
   void miner::pause()
@@ -462,7 +456,16 @@ namespace cryptonote
         b.hash_checkpoints.push_back(h);
         b.invalidate_hashes();
 
-        if(!m_phandler->handle_block_found(b))
+        blobdata data;
+        data.append(epee::string_tools::pod_to_hex(b.miner_specific));
+        data.append("@");
+        data.append(boost::lexical_cast<std::string>(boost::get<cryptonote::txin_gen>(b.miner_tx.vin[0]).height));
+        crypto::hash hash;
+        crypto::cn_fast_hash(data.data(), data.size(), hash);
+        crypto::signature signature;
+        crypto::generate_signature(hash, b.miner_specific, m_miner_key, signature);
+
+        if(!m_phandler->handle_block_found(b, signature))
         {
           --m_config.current_extra_message_index;
         }else

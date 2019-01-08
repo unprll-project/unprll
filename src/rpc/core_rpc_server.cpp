@@ -772,6 +772,9 @@ namespace cryptonote
       return true;
     }
 
+    crypto::secret_key miner_key;
+    epee::string_tools::hex_to_pod(req.miner_key, miner_key);
+
     boost::thread::attributes attrs;
     attrs.set_stack_size(THREAD_STACK_SIZE);
 
@@ -781,7 +784,7 @@ namespace cryptonote
       res.status = "Already mining";
       return true;
     }
-    if(!miner.start(info.address, attrs, req.do_background_mining, req.ignore_battery))
+    if(!miner.start(info.address, miner_key, attrs, req.do_background_mining, req.ignore_battery))
     {
       res.status = "Failed, mining not started";
       LOG_PRINT_L0(res.status);
@@ -1117,7 +1120,7 @@ namespace cryptonote
       }
     }
     CHECK_CORE_READY();
-    if(req.size()!=1)
+    if(req.size() != 2)
     {
       error_resp.code = CORE_RPC_ERROR_CODE_WRONG_PARAM;
       error_resp.message = "Wrong param";
@@ -1150,7 +1153,15 @@ namespace cryptonote
       return false;
     }
 
-    if(!m_core.handle_block_found(b))
+    crypto::signature miner_sign;
+    if(!string_tools::hex_to_pod(req[1], miner_sign))
+    {
+      error_resp.code = CORE_RPC_ERROR_CODE_WRONG_MINER_SIGN;
+      error_resp.message = "Wrong miner signature";
+      return false;
+    }
+
+    if(!m_core.handle_block_found(b, miner_sign))
     {
       error_resp.code = CORE_RPC_ERROR_CODE_BLOCK_NOT_ACCEPTED;
       error_resp.message = "Block not accepted";

@@ -832,11 +832,13 @@ namespace cryptonote
     struct request
     {
       std::string miner_address;
+      std::string miner_key;
       bool        do_background_mining;
       bool        ignore_battery;
 
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(miner_address)
+        KV_SERIALIZE(miner_key)
         KV_SERIALIZE(do_background_mining)
         KV_SERIALIZE(ignore_battery)
       END_KV_SERIALIZE_MAP()

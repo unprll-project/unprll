@@ -1286,7 +1286,7 @@ namespace cryptonote
     return bce;
   }
   //-----------------------------------------------------------------------------------------------
-  bool core::handle_block_found(block& b)
+  bool core::handle_block_found(block& b, crypto::signature& miner_sign)
   {
     block_verification_context bvc = boost::value_initialized<block_verification_context>();
     m_miner.pause();
@@ -1312,6 +1312,7 @@ namespace cryptonote
     {
       cryptonote_connection_context exclude_context = boost::value_initialized<cryptonote_connection_context>();
       NOTIFY_NEW_BLOCK::request arg = AUTO_VAL_INIT(arg);
+      arg.miner_sign = miner_sign;
       arg.current_blockchain_height = m_blockchain_storage.get_current_blockchain_height();
       std::vector<crypto::hash> missed_txs;
       std::vector<cryptonote::blobdata> txs;

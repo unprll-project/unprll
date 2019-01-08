@@ -129,10 +129,12 @@ namespace cryptonote
     {
       block_complete_entry b;
       uint64_t current_blockchain_height;
+      crypto::signature miner_sign;
 
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(b)
         KV_SERIALIZE(current_blockchain_height)
+        KV_SERIALIZE_VAL_POD_AS_BLOB(miner_sign)
       END_KV_SERIALIZE_MAP()
     };
   };
@@ -255,10 +257,12 @@ namespace cryptonote
     {
       block_complete_entry b;
       uint64_t current_blockchain_height;
+      crypto::signature miner_sign;
 
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(b)
         KV_SERIALIZE(current_blockchain_height)
+        KV_SERIALIZE_VAL_POD_AS_BLOB(miner_sign)
       END_KV_SERIALIZE_MAP()
     };
   };

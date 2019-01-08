@@ -4003,19 +4003,20 @@ bool simple_wallet::start_mining(const std::vector<std::string>& args)
     << tr("2) Run sweep_mined to make mined outputs usable.")
     << std::endl
     << tr("3) Sweeping your coins to the Primary account (after running sweep_mined) is recommended.")
+    << std::endl
+    << tr("4) Only run the miner on a daemon you trust completely")
     << std::endl;
-
-  std::string accepted = input_line("Is this okay? (Y/Yes/N/No): ");
-  if (std::cin.eof())
-    return true;
-  if (!command_line::is_yes(accepted))
-  {
-    fail_msg_writer() << tr("Mining cancelled.");
-    return true;
-  }
 
   COMMAND_RPC_START_MINING::request req = AUTO_VAL_INIT(req);
   req.miner_address = m_wallet->get_account().get_public_address_str(m_wallet->nettype());
+  auto pwd_container = tools::password_container::prompt(false, "Enter your password to start mining");
+  if (!pwd_container) {
+    MERROR("Couldn't read password");
+  }
+  auto pwd = pwd_container->password();
+  m_wallet->decrypt_keys(pwd);
+  req.miner_key = epee::string_tools::pod_to_hex(m_wallet->get_account().get_keys().m_spend_secret_key);
+  m_wallet->encrypt_keys(pwd);
 
   bool ok = true;
   size_t arg_size = args.size();

@@ -353,36 +353,41 @@ namespace rpc
 
   void DaemonHandler::handle(const StartMining::Request& req, StartMining::Response& res)
   {
-    cryptonote::address_parse_info info;
-    if(!get_account_address_from_str(info, m_core.get_nettype(), req.miner_address))
-    {
-      res.error_details = "Failed, wrong address";
-      LOG_PRINT_L0(res.error_details);
-      res.status = Message::STATUS_FAILED;
-      return;
-    }
-    if (info.is_subaddress)
-    {
-      res.error_details = "Failed, mining to subaddress isn't supported yet";
-      LOG_PRINT_L0(res.error_details);
-      res.status = Message::STATUS_FAILED;
-      return;
-    }
+    res.error_details = "Mining from the daemon is disabled currently";
+    LOG_PRINT_L0(res.error_details);
+    res.status = Message::STATUS_FAILED;
+    return;
 
-    unsigned int concurrency_count = boost::thread::hardware_concurrency() * 4;
-
-    boost::thread::attributes attrs;
-    attrs.set_stack_size(THREAD_STACK_SIZE);
-
-    if(!m_core.get_miner().start(info.address, attrs, req.do_background_mining, req.ignore_battery))
-    {
-      res.error_details = "Failed, mining not started";
-      LOG_PRINT_L0(res.error_details);
-      res.status = Message::STATUS_FAILED;
-      return;
-    }
-    res.status = Message::STATUS_OK;
-    res.error_details = "";
+    // cryptonote::address_parse_info info;
+    // if(!get_account_address_from_str(info, m_core.get_nettype(), req.miner_address))
+    // {
+    //   res.error_details = "Failed, wrong address";
+    //   LOG_PRINT_L0(res.error_details);
+    //   res.status = Message::STATUS_FAILED;
+    //   return;
+    // }
+    // if (info.is_subaddress)
+    // {
+    //   res.error_details = "Failed, mining to subaddress isn't supported yet";
+    //   LOG_PRINT_L0(res.error_details);
+    //   res.status = Message::STATUS_FAILED;
+    //   return;
+    // }
+    //
+    // unsigned int concurrency_count = boost::thread::hardware_concurrency() * 4;
+    //
+    // boost::thread::attributes attrs;
+    // attrs.set_stack_size(THREAD_STACK_SIZE);
+    //
+    // if(!m_core.get_miner().start(info.address, attrs, req.do_background_mining, req.ignore_battery))
+    // {
+    //   res.error_details = "Failed, mining not started";
+    //   LOG_PRINT_L0(res.error_details);
+    //   res.status = Message::STATUS_FAILED;
+    //   return;
+    // }
+    // res.status = Message::STATUS_OK;
+    // res.error_details = "";
 
   }
 

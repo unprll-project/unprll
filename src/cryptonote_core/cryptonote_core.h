@@ -220,10 +220,11 @@ namespace cryptonote
       * the network.
       *
       * @param b the block found
+      * @param miner_sign signature from miner's private spend key
       *
       * @return true if the block was added to the main chain, otherwise false
       */
-     virtual bool handle_block_found( block& b);
+     virtual bool handle_block_found(block& b, crypto::signature& miner_sign);
 
      /**
       * @copydoc Blockchain::create_block_template
