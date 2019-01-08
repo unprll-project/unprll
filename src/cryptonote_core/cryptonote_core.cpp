@@ -1385,6 +1385,9 @@ namespace cryptonote
     if (m_disable_broadcasts) {
         return false;
     }
+    if (message.length > 280) {
+        return false;
+    }
     if (std::find(std::begin(m_messages), std::end(m_messages), message) == std::end(m_messages)) {
         m_messages.push_back(message);
         MGINFO(message);
