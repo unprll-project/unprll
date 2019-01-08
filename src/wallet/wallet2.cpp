@@ -8343,7 +8343,7 @@ std::vector<wallet2::pending_tx> wallet2::create_transactions_2(std::vector<cryp
     {
       const uint32_t index_minor = td.m_subaddr_index.minor;
       auto find_predicate = [&index_minor](const std::pair<uint32_t, std::vector<size_t>>& x) { return x.first == index_minor; };
-      if ((td.is_rct()) || is_valid_decomposed_amount(td.amount()))
+      if (td.is_rct())
       {
         auto found = std::find_if(unused_transfers_indices_per_subaddr.begin(), unused_transfers_indices_per_subaddr.end(), find_predicate);
         if (found == unused_transfers_indices_per_subaddr.end())
@@ -8761,7 +8761,7 @@ std::vector<wallet2::pending_tx> wallet2::create_transactions_all(uint64_t below
       fund_found = true;
       if (below == 0 || td.amount() < below)
       {
-        if ((td.is_rct()) || is_valid_decomposed_amount(td.amount()))
+        if (td.is_rct())
           unused_transfer_dust_indices_per_subaddr[td.m_subaddr_index.minor].first.push_back(i);
         else
           unused_transfer_dust_indices_per_subaddr[td.m_subaddr_index.minor].second.push_back(i);
@@ -8806,7 +8806,7 @@ std::vector<wallet2::pending_tx> wallet2::create_transactions_single(const crypt
     const transfer_details& td = m_transfers[i];
     if (td.m_key_image_known && td.m_key_image == ki && !td.m_spent && (use_rct ? true : !td.is_rct()) && is_transfer_unlocked(td))
     {
-      if (td.is_rct() || is_valid_decomposed_amount(td.amount()))
+      if (td.is_rct())
         unused_transfers_indices.push_back(i);
       else
         unused_dust_indices.push_back(i);
