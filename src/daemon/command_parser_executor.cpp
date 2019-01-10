@@ -263,6 +263,8 @@ bool t_command_parser_executor::print_transaction_pool_stats(const std::vector<s
 
 bool t_command_parser_executor::start_mining(const std::vector<std::string>& args)
 {
+  std::cout << "Mining from the daemon is disabled currently" << std::endl;
+  return true;
   if(!args.size())
   {
     std::cout << "Please specify a wallet address to mine for: start_mining <addr>" << std::endl;

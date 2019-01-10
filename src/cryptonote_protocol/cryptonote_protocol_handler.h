@@ -156,7 +156,6 @@ namespace cryptonote
     epee::math_helper::once_a_time_seconds<24 * 60 * 60> m_blocked_keys_clearer;
     boost::uuids::uuid m_dandelion_peer;
     std::vector<crypto::public_key> m_blocked_keys;
-    crypto::signature m_current_miner_sign;
 
     boost::mutex m_buffer_mutex;
     double get_avg_block_size();

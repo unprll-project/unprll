@@ -369,6 +369,13 @@ namespace cryptonote
   //-----------------------------------------------------------------------------------------------------
   void miner::on_synchronized()
   {
+    if(m_do_mining)
+    {
+      boost::thread::attributes attrs;
+      attrs.set_stack_size(THREAD_STACK_SIZE);
+
+      start(m_mine_address, m_miner_key, attrs, get_is_background_mining_enabled(), get_ignore_battery());
+    }
   }
   //-----------------------------------------------------------------------------------------------------
   void miner::pause()

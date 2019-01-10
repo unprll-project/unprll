@@ -732,6 +732,7 @@ namespace cryptonote
         NOTIFY_REQUEST_FLUFFY_MISSING_TX::request missing_tx_req;
         missing_tx_req.block_hash = get_block_hash(new_block);
         missing_tx_req.current_blockchain_height = arg.current_blockchain_height;
+        missing_tx_req.miner_sign = arg.miner_sign;
         missing_tx_req.missing_tx_indices = std::move(need_tx_indices);
 
         m_core.resume_mine();
@@ -770,6 +771,7 @@ namespace cryptonote
           //TODO: Add here announce protocol usage
           NOTIFY_NEW_BLOCK::request reg_arg = AUTO_VAL_INIT(reg_arg);
           reg_arg.current_blockchain_height = arg.current_blockchain_height;
+          reg_arg.miner_sign = arg.miner_sign;
           reg_arg.b = b;
           relay_block(reg_arg, context);
         }
@@ -820,7 +822,7 @@ namespace cryptonote
     std::vector<crypto::hash> txids;
     NOTIFY_NEW_FLUFFY_BLOCK::request fluffy_response;
     fluffy_response.b.block = t_serializable_object_to_blob(b);
-    fluffy_response.miner_sign = m_current_miner_sign;
+    fluffy_response.miner_sign = arg.miner_sign;
     fluffy_response.current_blockchain_height = arg.current_blockchain_height;
     for(auto& tx_idx: arg.missing_tx_indices)
     {
@@ -1227,7 +1229,7 @@ skip:
             TIME_MEASURE_START(block_process_time);
             block_verification_context bvc = boost::value_initialized<block_verification_context>();
 
-            m_core.handle_incoming_block(block_entry.block, bvc, false); // <--- process block
+            m_core.handle_incoming_block(block_entry.block, bvc, true); // <--- process block
 
             if(bvc.m_verifivation_failed)
             {
@@ -1848,7 +1850,6 @@ skip:
     fluffy_arg.miner_sign = arg.miner_sign;
     fluffy_arg.b = arg.b;
     fluffy_arg.b.txs = fluffy_txs;
-    m_current_miner_sign = arg.miner_sign;
 
     // sort peers between fluffy ones and others
     std::list<boost::uuids::uuid> fullConnections, fluffyConnections;
