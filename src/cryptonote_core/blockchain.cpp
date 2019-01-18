@@ -97,7 +97,9 @@ static const struct {
   // This is to enable all Monero features from genesis
   { 9, 1, 0, 1 },
   // version 10 fixes a segfault with generating the mining blob
-  { 10, 3000, 0, 1545301804804 }
+  { 10, 3000, 0, 1545301804804 },
+  // version 11 reduces blocktime from 10 minutes to 2 minutes
+  { 11, 10000, 0, 1547829355406 }
 };
 static const uint64_t mainnet_hard_fork_version_1_till = 1;
 
@@ -124,7 +126,7 @@ static const struct {
   { 1, 0, 0, 0 },
 
   // version 10 from the start of the chain
-  { 10, 1, 0, 1 },
+  { 11, 1, 0, 1 },
 };
 
 //------------------------------------------------------------------
