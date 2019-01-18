@@ -240,6 +240,8 @@ namespace cryptonote
 
     if(command_line::has_arg(vm, arg_start_mining))
     {
+      MWARNING("Mining from the daemon is disabled currently");
+      return false;
       address_parse_info info;
       if(!cryptonote::get_account_address_from_str(info, nettype, command_line::get_arg(vm, arg_start_mining)) || info.is_subaddress)
       {
