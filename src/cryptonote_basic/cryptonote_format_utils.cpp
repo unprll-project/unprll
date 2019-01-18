@@ -956,7 +956,8 @@ namespace cryptonote
     blob.append(tools::get_varint_data(b.minor_version));
     uint64_t timestamp = b.timestamp;
     // Fuzz the timestamp, just in case
-    timestamp = timestamp - (timestamp % DIFFICULTY_TARGET) + (DIFFICULTY_TARGET / 2);
+    const int target = (b.major_version >= HF_VERSION_BLOCK_TIME_REDUCTION) ? DIFFICULTY_TARGET_V2 : DIFFICULTY_TARGET_V1;
+    timestamp = timestamp - (timestamp % target) + (target / 2);
     blob.append(tools::get_varint_data(timestamp));
     blob.append(reinterpret_cast<const char*>(&b.prev_id), sizeof(b.prev_id));
     blob.append(reinterpret_cast<const char*>(&b.miner_specific), sizeof(b.miner_specific));
@@ -992,7 +993,8 @@ namespace cryptonote
   {
     block b = _b;
     // Fuzz the timestamp, just in case
-    b.timestamp = b.timestamp - (b.timestamp % DIFFICULTY_TARGET) + (DIFFICULTY_TARGET / 2);
+    const int target = (b.major_version >= HF_VERSION_BLOCK_TIME_REDUCTION) ? DIFFICULTY_TARGET_V2 : DIFFICULTY_TARGET_V1;
+    b.timestamp = b.timestamp - (b.timestamp % target) + (target / 2);
     bool hash_result = get_object_hash(get_block_hashing_blob(b), res);
 
     return hash_result;

@@ -146,7 +146,7 @@ namespace cryptonote {
     // https://github.com/zawy12/difficulty-algorithms/issues/3
     // See commented version for explanations & required config file changes. Fix FTL and MTP!
     difficulty_type next_difficulty(std::vector<uint64_t> timestamps, std::vector<difficulty_type> cumulative_difficulties, size_t target_seconds) {
-        uint64_t  T = DIFFICULTY_TARGET;
+        uint64_t  T = target_seconds;
         uint64_t  N = DIFFICULTY_WINDOW; // N=45, 60, and 90 for T=600, 120, 60.
         uint64_t  L(0), ST(0), next_D, prev_D, avg_D, i;
 

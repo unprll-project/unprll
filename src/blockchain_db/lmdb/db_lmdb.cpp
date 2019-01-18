@@ -2300,8 +2300,9 @@ uint64_t BlockchainLMDB::get_tx_unlock_time(const crypto::hash& h) const
   // XXX: I assume if the code got through to here, the height would definitely
   //      be in the DB
   uint64_t height = get_tx_block_height(h);
+  uint64_t const block_span = (height >= HF_VERSION_BLOCK_TIME_REDUCTION) ? config::UNLOCK_DELTA_BLOCK_SPANS_V2 : config::UNLOCK_DELTA_BLOCK_SPANS_V1;
 
-  return (height + (4 * ret));
+  return (height + (block_span * ret));
 }
 
 bool BlockchainLMDB::get_tx_blob(const crypto::hash& h, cryptonote::blobdata &bd) const
@@ -3332,7 +3333,8 @@ std::map<uint64_t, std::tuple<uint64_t, uint64_t, uint64_t>> BlockchainLMDB::get
       while (num_elems > 0) {
         const tx_out_index toi = get_output_tx_and_index(amount, num_elems - 1);
         const uint64_t height = get_tx_block_height(toi.first);
-        if (height + CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE <= blockchain_height)
+        const uint64_t spendable_age = height > HF_VERSION_MIN_MIXIN_12 ? CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V2 : CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V1;
+        if (height + spendable_age <= blockchain_height)
           break;
         --num_elems;
       }

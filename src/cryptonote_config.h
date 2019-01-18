@@ -41,19 +41,22 @@
 #define CRYPTONOTE_GETBLOCKTEMPLATE_MAX_BLOCK_SIZE	    196608     // Size of block (bytes) that is the maximum that miners will produce
 #define CRYPTONOTE_MAX_TX_SIZE                          1000000000
 #define CRYPTONOTE_PUBLIC_ADDRESS_TEXTBLOB_VER          0
-#define CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW            3          // Block spans of 4 blocks = 3*4 = 12 blocks
+#define CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1         3          // Block spans of 4 blocks = 3*4 = 12 blocks
+#define CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V2         4          // Block spans of 16 blocks = 4*16 = 64 blocks
 #define CURRENT_TRANSACTION_VERSION                     2
 #define CURRENT_BLOCK_MAJOR_VERSION                     1
 #define CURRENT_BLOCK_MINOR_VERSION                     9
-#define CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT              330
-#define CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE             2          // Blocks
+#define CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1           330
+#define CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V2           70
+#define CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V1          2          // Blocks
+#define CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V2          10
 
 #define BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW               11
 
 // MONEY_SUPPLY - total number coins to be generated
 #define MONEY_SUPPLY                                    ((uint64_t)(-1))
 #define EMISSION_SPEED_FACTOR_PER_MINUTE                (20)
-#define FINAL_SUBSIDY_PER_MINUTE                        ((uint64_t)600000000000) // 3 * pow(10, 11)
+#define FINAL_SUBSIDY_PER_MINUTE                        ((uint64_t)600000000000) // 6 * pow(10, 11)
 
 #define CRYPTONOTE_REWARD_BLOCKS_WINDOW                 100
 #define CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE       300000 //size of block (bytes) after which reward for block calculated using block size - second change, from v5
@@ -70,7 +73,8 @@
 
 #define ORPHANED_BLOCKS_MAX_COUNT                       100
 
-#define DIFFICULTY_TARGET                               600  // seconds
+#define DIFFICULTY_TARGET_V1                            600  // seconds
+#define DIFFICULTY_TARGET_V2                            120
 #define DIFFICULTY_WINDOW                               60
 #define DIFFICULTY_BLOCKS_COUNT                         DIFFICULTY_WINDOW + 1
 
@@ -125,6 +129,7 @@
 #define HF_VERSION_ENFORCE_RCT                  6
 #define HF_VERSION_PER_BYTE_FEE                 8
 #define HF_VERSION_MIN_MIXIN_12                 8
+#define HF_VERSION_BLOCK_TIME_REDUCTION         11
 
 #define PER_KB_FEE_QUANTIZATION_DECIMALS        8
 
@@ -155,12 +160,16 @@ namespace config
   std::string const GENESIS_TX = "010301ff000180b8ceedf7ff03029b2e4c0281c0b02e7c53291a94d1d0cbff8883f8024f5142ee494ffbbd08807121017767aafcde9be00dcfd098715ebcf7f410daebc582fda69d24a28e9d0bc890d1";
 
   // Unprll specific
-  uint64_t const HASH_CHECKPOINT_STEP = 10; // hashes between each checkpoint
-  double const BLOCK_VALID_THRESHOLD = 0.10; // 20% of all hash checkpoints must verify correctly
+  uint64_t const HASH_CHECKPOINT_STEP_V1 = 10; // hashes between each checkpoint
+  uint64_t const HASH_CHECKPOINT_STEP_V2 = 30;
+  double const BLOCK_VALID_THRESHOLD = 0.10; // 10% of all hash checkpoints must verify correctly
 
   // Dandelion config
   uint8_t const DANDELION_TX_EMBARGO_PERIOD = 30;
   uint8_t const DANDELION_TX_STEM_PROPAGATION_PROBABILITY = 90;
+
+  uint8_t const UNLOCK_DELTA_BLOCK_SPANS_V1 = 4;
+  uint8_t const UNLOCK_DELTA_BLOCK_SPANS_V2 = 16;
 
   namespace testnet
   {

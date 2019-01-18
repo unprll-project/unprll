@@ -161,7 +161,8 @@ namespace cryptonote
     tx.version = 2;
 
     //lock
-    tx.unlock_delta = CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW;
+    uint64_t const unlock_window = (hard_fork_version >= HF_VERSION_BLOCK_TIME_REDUCTION) ? CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V2 : CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1;
+    tx.unlock_delta = unlock_window;
     tx.vin.push_back(in);
 
     tx.invalidate_hashes();

@@ -1542,8 +1542,9 @@ uint64_t BlockchainBDB::get_tx_unlock_time(const crypto::hash& h) const
     // XXX: I assume if the code got through to here, the height would definitely
     //      be in the DB
     uint64_t height = get_tx_block_height(h);
+    uint64_t const block_span = (height >= HF_VERSION_BLOCK_TIME_REDUCTION) ? config::UNLOCK_DELTA_BLOCK_SPANS_V2 : config::UNLOCK_DELTA_BLOCK_SPANS_V1;
 
-    return (height + (4 * (uint64_t)result));
+    return (height + (block_span * ret));
 }
 
 transaction BlockchainBDB::get_tx(const crypto::hash& h) const

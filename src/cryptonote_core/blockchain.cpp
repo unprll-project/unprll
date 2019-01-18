@@ -109,8 +109,8 @@ static const struct {
 } testnet_hard_forks[] = {
     // version 1 for genesis
     { 1, 0, 0, 0 },
-    // version 10 from the start of the chain
-    { 10, 1, 0, 1 },
+    // version 11 from the start of the chain
+    { 11, 1, 0, 10 },
 };
 static const uint64_t testnet_hard_fork_version_1_till = 1;
 
@@ -1051,7 +1051,7 @@ difficulty_type Blockchain::get_next_difficulty_for_alternative_chain(const std:
   }
 
   // FIXME: This will fail if fork activation heights are subject to voting
-  size_t target = DIFFICULTY_TARGET;
+  size_t target = (bei.height >= HF_VERSION_BLOCK_TIME_REDUCTION) ? DIFFICULTY_TARGET_V2 : DIFFICULTY_TARGET_V1;
 
   // calculate the difficulty target for the block and return it
   return next_difficulty(timestamps, cumulative_difficulties, target);
@@ -1072,8 +1072,9 @@ bool Blockchain::prevalidate_miner_transaction(const block& b, uint64_t height)
     MWARNING("The miner transaction in block has invalid height: " << boost::get<txin_gen>(b.miner_tx.vin[0]).height << ", expected: " << height);
     return false;
   }
+  uint64_t const unlock_window = (b.major_version >= HF_VERSION_BLOCK_TIME_REDUCTION) ? CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V2 : CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1;
   MDEBUG("Miner tx hash: " << get_transaction_hash(b.miner_tx));
-  CHECK_AND_ASSERT_MES(b.miner_tx.unlock_delta == CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW, false, "coinbase transaction transaction has the wrong unlock delta = " << b.miner_tx.unlock_delta << ", expected " << CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
+  CHECK_AND_ASSERT_MES(b.miner_tx.unlock_delta == unlock_window, false, "coinbase transaction transaction has the wrong unlock delta = " << b.miner_tx.unlock_delta << ", expected " << unlock_window);
 
   //check outs overflow
   //NOTE: not entirely sure this is necessary, given that this function is
@@ -1157,7 +1158,9 @@ bool Blockchain::is_valid_checkpoint(cryptonote::block &blk, const uint64_t chec
 
     std::list<block> empty;
 
-    while (i < std::min((blk.iterations - (checkpoint * config::HASH_CHECKPOINT_STEP)), config::HASH_CHECKPOINT_STEP)) {
+    uint64_t const checkpoint_step = (blk.major_version >= HF_VERSION_BLOCK_TIME_REDUCTION) ? config::HASH_CHECKPOINT_STEP_V2 : config::HASH_CHECKPOINT_STEP_V1;
+
+    while (i < std::min((blk.iterations - (checkpoint * checkpoint_step)), checkpoint_step)) {
         if (check_hash(checkpoint_start, diff)) {
             slow_hash_free_state();
             rollback_blockchain_switching(empty, height);
@@ -1209,8 +1212,10 @@ bool Blockchain::check_miner_specific(const cryptonote::block& block)
 //------------------------------------------------------------------
 bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proof_of_work, difficulty_type current_diff, uint64_t height)
 {
+  uint64_t const checkpoint_step = (block.major_version >= HF_VERSION_BLOCK_TIME_REDUCTION) ? config::HASH_CHECKPOINT_STEP_V2 : config::HASH_CHECKPOINT_STEP_V1;
+
   // 1. # of checkpoints (minus the first and last) must match iterations
-  if ((block.iterations / config::HASH_CHECKPOINT_STEP) != (block.hash_checkpoints.size() - 2)) {
+  if ((block.iterations / checkpoint_step) != (block.hash_checkpoints.size() - 2)) {
     MERROR_VER("Iteration mismatch");
     return false;
   }
@@ -1259,7 +1264,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
   }
 
   // TODO FIXME Move all slow_hash_free_state calls into one place
-  if (iterations < config::HASH_CHECKPOINT_STEP) {
+  if (iterations < checkpoint_step) {
       // Single threaded should work fine here
       for (uint32_t i = 1; i <= iterations; i += 1) {
           // If there's an earlier hash that is valid, invalidate block
@@ -1269,7 +1274,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
           }
 
           // If the current iteration is listed in checkpoints, check if the hash matches
-          if (i % config::HASH_CHECKPOINT_STEP == 0 && hash_checkpoints[(i / config::HASH_CHECKPOINT_STEP)] != proof_of_work) {
+          if (i % checkpoint_step == 0 && hash_checkpoints[(i / checkpoint_step)] != proof_of_work) {
               slow_hash_free_state();
               return false;
           }
@@ -1279,7 +1284,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
 
           block.iterations += 1;
 
-          if (i % config::HASH_CHECKPOINT_STEP == 0) {
+          if (i % checkpoint_step == 0) {
               block.hash_checkpoints.push_back(proof_of_work);
           }
       }
@@ -1297,13 +1302,13 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
       uint64_t rand_start = crypto::rand<uint64_t>() % iterations;
 
       for (uint32_t i = 0; i < threads_count; i += 1) {
-          m_threads.push_back(boost::thread(attrs, [this, rand_start, hash_checkpoints, threads_count, current_diff, iterations, i, height, blk_hash]() {
+          m_threads.push_back(boost::thread(attrs, [this, rand_start, hash_checkpoints, threads_count, current_diff, iterations, i, height, blk_hash, checkpoint_step]() {
               uint64_t pos = rand_start + i;
               uint64_t checkpoints_verified = i;
-              while (pos < hash_checkpoints.size() && iterations > pos * config::HASH_CHECKPOINT_STEP) {
+              while (pos < hash_checkpoints.size() && iterations > pos * checkpoint_step) {
                   crypto::hash h = hash_checkpoints[pos];
 
-                  for (uint64_t j = 0; j < std::min((iterations - (pos * config::HASH_CHECKPOINT_STEP)), config::HASH_CHECKPOINT_STEP); j += 1) {
+                  for (uint64_t j = 0; j < std::min((iterations - (pos * checkpoint_step)), checkpoint_step); j += 1) {
                       // If there's an earlier hash that is valid, invalidate block
                       if (check_hash(h, current_diff)) {
                           MERROR("[" << i << "] Premature valid hash");
@@ -1408,7 +1413,8 @@ bool Blockchain::create_block_template(block& b, const account_public_address& _
   b.miner_specific = _miner_address.m_spend_public_key;
   b.timestamp = time(NULL);
   // Make it fuzzy
-  b.timestamp = b.timestamp - (b.timestamp % DIFFICULTY_TARGET) + (DIFFICULTY_TARGET / 2);
+  const int target = (b.major_version >= HF_VERSION_BLOCK_TIME_REDUCTION) ? DIFFICULTY_TARGET_V2 : DIFFICULTY_TARGET_V1;
+  b.timestamp = b.timestamp - (b.timestamp % target) + (target / 2);
   b.iterations = 0;
   b.hash_checkpoints = std::vector<crypto::hash>();
 
@@ -1910,7 +1916,8 @@ uint64_t Blockchain::get_num_mature_outputs(uint64_t amount) const
   {
     const tx_out_index toi = m_db->get_output_tx_and_index(amount, num_outs - 1);
     const uint64_t height = m_db->get_tx_block_height(toi.first);
-    if (height + CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE <= m_db->height())
+    const uint64_t spendable_age = (height >= HF_VERSION_BLOCK_TIME_REDUCTION) ? CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V2 : CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V1;
+    if (height + spendable_age <= m_db->height())
       break;
     --num_outs;
   }
@@ -3265,7 +3272,8 @@ bool Blockchain::check_block_timestamp(std::vector<uint64_t>& timestamps, const 
   LOG_PRINT_L3("Blockchain::" << __func__);
   median_ts = epee::misc_utils::median(timestamps);
   // Make it fuzzy
-  median_ts = median_ts - (median_ts % DIFFICULTY_TARGET) + (DIFFICULTY_TARGET / 2);
+  const uint64_t target = (b.major_version >= HF_VERSION_BLOCK_TIME_REDUCTION) ? DIFFICULTY_TARGET_V2 : DIFFICULTY_TARGET_V1;
+  median_ts = median_ts - (median_ts % target) + (target / 2);
 
   if(b.timestamp < median_ts)
   {
@@ -3274,9 +3282,9 @@ bool Blockchain::check_block_timestamp(std::vector<uint64_t>& timestamps, const 
   }
 
   // Ensure that the timestamp is rounded center to the nearest (target) seconds (10 minutes in our case)
-  if(b.timestamp % DIFFICULTY_TARGET != (DIFFICULTY_TARGET / 2))
+  if(b.timestamp % target != (target / 2))
   {
-    MERROR_VER("Timestamp of block with id: " << get_block_hash(b) << ", " << b.timestamp << " is not rounded center to nearest " << DIFFICULTY_TARGET << "seconds");
+    MERROR_VER("Timestamp of block with id: " << get_block_hash(b) << ", " << b.timestamp << " is not rounded center to nearest " << target << "seconds");
     return false;
   }
 
@@ -3293,7 +3301,8 @@ bool Blockchain::check_block_timestamp(std::vector<uint64_t>& timestamps, const 
 bool Blockchain::check_block_timestamp(const block& b, uint64_t& median_ts) const
 {
   LOG_PRINT_L3("Blockchain::" << __func__);
-  if(b.timestamp > get_adjusted_time() + CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT)
+  uint64_t const FTL = (b.major_version > 11) ? CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V2 : CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1;
+  if(b.timestamp > get_adjusted_time() + FTL)
   {
     MERROR_VER("Timestamp of block with id: " << get_block_hash(b) << ", " << b.timestamp << ", bigger than adjusted time + 2 hours");
     return false;
@@ -4525,7 +4534,7 @@ bool Blockchain::get_hard_fork_voting_info(uint8_t version, uint32_t &window, ui
 
 uint64_t Blockchain::get_difficulty_target() const
 {
-  return DIFFICULTY_TARGET;
+  return get_current_hard_fork_version() >= HF_VERSION_BLOCK_TIME_REDUCTION ? DIFFICULTY_TARGET_V2 : DIFFICULTY_TARGET_V1;
 }
 
 std::map<uint64_t, std::tuple<uint64_t, uint64_t, uint64_t>> Blockchain:: get_output_histogram(const std::vector<uint64_t> &amounts, bool unlocked, uint64_t recent_cutoff, uint64_t min_count) const

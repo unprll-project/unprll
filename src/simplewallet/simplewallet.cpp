@@ -812,7 +812,7 @@ bool simple_wallet::print_fee_info(const std::vector<std::string> &args/* = std:
       std::string msg;
       if (priority == m_wallet->get_default_priority() || (m_wallet->get_default_priority() == 0 && priority == 2))
         msg = tr(" (current)");
-      uint64_t minutes_low = nblocks_low * DIFFICULTY_TARGET / 60, minutes_high = nblocks_high * DIFFICULTY_TARGET / 60;
+      uint64_t minutes_low = nblocks_low * DIFFICULTY_TARGET_V2 / 60, minutes_high = nblocks_high * DIFFICULTY_TARGET_V2 / 60;
       if (nblocks_high == nblocks_low)
         message_writer() << (boost::format(tr("%u block (%u minutes) backlog at priority %u%s")) % nblocks_low % minutes_low % priority % msg).str();
       else
@@ -2302,11 +2302,11 @@ simple_wallet::simple_wallet()
   m_cmd_binder.set_handler("locked_transfer",
                            boost::bind(&simple_wallet::locked_transfer, this, _1),
                            tr("locked_transfer [index=<N1>[,<N2>,...]] [<priority>] [<ring_size>] (<URI> | <addr> <amount>) <lockblocks> [<payment_id>]"),
-                           tr("Transfer <amount> to <address> and lock it for <lockblocks> blocks (max. 262143 = ~5 years). If the parameter \"index=<N1>[,<N2>,...]\" is specified, the wallet uses outputs received by addresses of those indices. If omitted, the wallet randomly chooses address indices to be used. In any case, it tries its best not to combine outputs across multiple addresses. <priority> is the priority of the transaction. The higher the priority, the higher the transaction fee. Valid values in priority order (from lowest to highest) are: unimportant, normal, elevated, priority. If omitted, the default value (see the command \"set priority\") is used. <ring_size> is the number of inputs to include for untraceability. Multiple payments can be made at once by adding URI_2 or <address_2> <amount_2> etcetera (before the payment ID, if it's included)"));
+                           tr("Transfer <amount> to <address> and lock it for <lockblocks> blocks (max. 1048575 = ~5 years). If the parameter \"index=<N1>[,<N2>,...]\" is specified, the wallet uses outputs received by addresses of those indices. If omitted, the wallet randomly chooses address indices to be used. In any case, it tries its best not to combine outputs across multiple addresses. <priority> is the priority of the transaction. The higher the priority, the higher the transaction fee. Valid values in priority order (from lowest to highest) are: unimportant, normal, elevated, priority. If omitted, the default value (see the command \"set priority\") is used. <ring_size> is the number of inputs to include for untraceability. Multiple payments can be made at once by adding URI_2 or <address_2> <amount_2> etcetera (before the payment ID, if it's included)"));
   m_cmd_binder.set_handler("locked_sweep_all",
                            boost::bind(&simple_wallet::locked_sweep_all, this, _1),
                            tr("locked_sweep_all [index=<N1>[,<N2>,...]] [<priority>] [<ring_size>] <address> <lockblocks> [<payment_id>]"),
-                           tr("Send all unlocked balance to an address and lock it for <lockblocks> blocks (max. 262143 = ~5 years). If the parameter \"index<N1>[,<N2>,...]\" is specified, the wallet sweeps outputs received by those address indices. If omitted, the wallet randomly chooses an address index to be used. <priority> is the priority of the sweep. The higher the priority, the higher the transaction fee. Valid values in priority order (from lowest to highest) are: unimportant, normal, elevated, priority. If omitted, the default value (see the command \"set priority\") is used. <ring_size> is the number of inputs to include for untraceability."));
+                           tr("Send all unlocked balance to an address and lock it for <lockblocks> blocks (max. 1048575 = ~5 years). If the parameter \"index<N1>[,<N2>,...]\" is specified, the wallet sweeps outputs received by those address indices. If omitted, the wallet randomly chooses an address index to be used. <priority> is the priority of the sweep. The higher the priority, the higher the transaction fee. Valid values in priority order (from lowest to highest) are: unimportant, normal, elevated, priority. If omitted, the default value (see the command \"set priority\") is used. <ring_size> is the number of inputs to include for untraceability."));
   m_cmd_binder.set_handler("sweep_unmixable",
                            boost::bind(&simple_wallet::sweep_unmixable, this, _1),
                            tr("Send all unmixable outputs to yourself with ring_size 1"));
@@ -4800,14 +4800,14 @@ bool simple_wallet::transfer_main(int transfer_type, const std::vector<std::stri
       fail_msg_writer() << tr("bad locked_blocks parameter:") << " " << local_args.back();
       return true;
     }
-    if ((locked_blocks / 4) > 65535) // 2**16 - 1
+    if ((locked_blocks / config::UNLOCK_DELTA_BLOCK_SPANS_V2) > 65535) // 2**16 - 1
     {
-        fail_msg_writer() << tr("Locked blocks span too high, max 262143 (˜5 yrs)");
+        fail_msg_writer() << tr("Locked blocks span too high, max 1048575 (˜5 yrs)");
         return true;
     }
-    if ((locked_blocks % 4) != 0) {
-        message_writer() << tr("Locked blocks will be rounded down to ") << (locked_blocks - (locked_blocks % 4));
-        message_writer() << tr("Unlock time may be off by 40 minutes at most");
+    if ((locked_blocks % config::UNLOCK_DELTA_BLOCK_SPANS_V2) != 0) {
+        message_writer() << tr("Locked blocks will be rounded down to ") << (locked_blocks - (locked_blocks % config::UNLOCK_DELTA_BLOCK_SPANS_V2));
+        message_writer() << tr("Unlock time may be off by 30 minutes at most");
     }
     locked_blocks /= 4;
     local_args.pop_back();
@@ -5057,8 +5057,8 @@ bool simple_wallet::transfer_main(int transfer_type, const std::vector<std::stri
                                                    % print_money(dust_not_in_fee);
         if (transfer_type == TransferLocked)
         {
-            float days = (locked_blocks * 4) / 144.0f; // 144 = (24 * 60) / 10
-            prompt << boost::format(tr(".\nThis transaction will unlock on block %llu, in approximately %s days (assuming 10 minutes per block)")) % ((unsigned long long) (bc_height + locked_blocks * 4)) % days;
+            float days = (locked_blocks * config::UNLOCK_DELTA_BLOCK_SPANS_V2) / 720.0f; // 720 = (24 * 60) / 2
+            prompt << boost::format(tr(".\nThis transaction will unlock on block %llu, in approximately %s days (assuming 2 minutes per block)")) % ((unsigned long long) (bc_height + locked_blocks * config::UNLOCK_DELTA_BLOCK_SPANS_V2)) % days;
         }
         if (m_wallet->print_ring_members())
         {
@@ -8047,7 +8047,9 @@ bool simple_wallet::show_transfer(const std::vector<std::string> &args)
       success_msg_writer() << "Timestamp: " << get_human_readable_timestamp(pd.m_timestamp);
       success_msg_writer() << "Amount: " << print_money(pd.m_amount);
       success_msg_writer() << "Payment ID: " << payment_id;
-      uint64_t bh = pd.m_block_height + std::max((uint16_t)(pd.m_unlock_delta * 4), (uint16_t)CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE);
+      uint64_t const unlock_delta_span = (pd.m_block_height >= HF_VERSION_BLOCK_TIME_REDUCTION) ? config::UNLOCK_DELTA_BLOCK_SPANS_V2 : config::UNLOCK_DELTA_BLOCK_SPANS_V1;
+      uint64_t const tx_spendable_age = (pd.m_block_height >= HF_VERSION_BLOCK_TIME_REDUCTION) ? CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V2 : CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V1;
+      uint64_t bh = pd.m_block_height + std::max((uint16_t)(pd.m_unlock_delta * unlock_delta_span), (uint16_t)tx_spendable_age);
       uint64_t last_block_reward = m_wallet->get_last_block_reward();
       uint64_t suggested_threshold = last_block_reward ? (pd.m_amount + last_block_reward - 1) / last_block_reward : 0;
       if (bh >= last_block_height)

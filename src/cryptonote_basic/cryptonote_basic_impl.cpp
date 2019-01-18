@@ -83,11 +83,16 @@ namespace cryptonote {
   }
   //-----------------------------------------------------------------------------------------------
   bool get_block_reward(size_t median_weight, size_t current_block_weight, uint64_t already_generated_coins, uint64_t &reward, uint8_t version) {
-    static_assert(DIFFICULTY_TARGET%60==0,"difficulty targets must be a multiple of 60");
-    const int target = DIFFICULTY_TARGET;
+    static_assert((DIFFICULTY_TARGET_V1%60==0 && DIFFICULTY_TARGET_V2%60==0),"difficulty targets must be a multiple of 60");
+    const int target = version >= HF_VERSION_BLOCK_TIME_REDUCTION ? DIFFICULTY_TARGET_V2 : DIFFICULTY_TARGET_V1;
     const int target_minutes = target / 60;
 
     uint64_t base_reward = (MONEY_SUPPLY - already_generated_coins) >> EMISSION_SPEED_FACTOR_PER_MINUTE;
+
+    if (version >= HF_VERSION_BLOCK_TIME_REDUCTION) {
+      base_reward /= 5; // 20% of 17 ULL = 3.5x ULL
+    }
+
     base_reward = base_reward - (base_reward % 10000000000ULL);
     if (base_reward < FINAL_SUBSIDY_PER_MINUTE*target_minutes)
     {

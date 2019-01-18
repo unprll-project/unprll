@@ -305,7 +305,7 @@ namespace cryptonote
     uint64_t abs_diff = std::abs(diff);
     uint64_t max_block_height = std::max(hshd.current_height,m_core.get_current_blockchain_height());
     MCLOG(is_inital ? el::Level::Info : el::Level::Debug, "global", context <<  "Sync data returned a new top block candidate: " << m_core.get_current_blockchain_height() << " -> " << hshd.current_height
-      << " [Your node is " << abs_diff << " blocks (" << ((abs_diff) / (24 * 60 * 60 / DIFFICULTY_TARGET)) << " days) "
+      << " [Your node is " << abs_diff << " blocks "
       << (0 <= diff ? std::string("behind") : std::string("ahead"))
       << "] " << ENDL << "SYNCHRONIZATION started");
       if (hshd.current_height >= m_core.get_current_blockchain_height() + 5) // don't switch to unsafe mode just for a few blocks
@@ -454,7 +454,9 @@ namespace cryptonote
           return 1;
       }
 
-      if (arg.checkpoint * config::HASH_CHECKPOINT_STEP >= b.iterations) {
+      uint64_t const checkpoint_step = (m_core.get_ideal_hard_fork_version() >= HF_VERSION_BLOCK_TIME_REDUCTION) ? config::HASH_CHECKPOINT_STEP_V2 : config::HASH_CHECKPOINT_STEP_V1;
+
+      if (arg.checkpoint * checkpoint_step >= b.iterations) {
           // Invalid checkpoint that... isn't part of the checkpoints?
           drop_connection(context, true, false);
           return 1;

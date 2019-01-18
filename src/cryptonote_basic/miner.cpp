@@ -408,6 +408,7 @@ namespace cryptonote
     MGINFO("Miner thread was started");
     difficulty_type local_diff = 0;
     uint32_t local_template_ver = 0;
+    uint64_t checkpoint_step = DIFFICULTY_TARGET_V2;
     block b;
     crypto::hash h;
     slow_hash_allocate_state();
@@ -436,6 +437,11 @@ namespace cryptonote
       {
         CRITICAL_REGION_BEGIN(m_template_lock);
         b = m_template;
+        if (b.major_version >= HF_VERSION_BLOCK_TIME_REDUCTION) {
+            checkpoint_step = config::HASH_CHECKPOINT_STEP_V2;
+        } else {
+            checkpoint_step = config::HASH_CHECKPOINT_STEP_V1;
+        }
         local_diff = m_diffic;
         // height = m_height;
         CRITICAL_REGION_END();
@@ -487,7 +493,7 @@ namespace cryptonote
       crypto::cn_slow_hash(h.data, sizeof(h.data), h);
       b.iterations += 1;
 
-      if (b.iterations % config::HASH_CHECKPOINT_STEP == 0) {
+      if (b.iterations % checkpoint_step == 0) {
         // Add checkpoint hash
         b.hash_checkpoints.push_back(h);
       }
@@ -625,7 +631,7 @@ namespace cryptonote
         boost::tribool battery_powered(on_battery_power());
         if(!indeterminate( battery_powered ))
         {
-          on_ac_power = !battery_powered;
+          on_ac_power = bool(!battery_powered);
         }
       }
 
