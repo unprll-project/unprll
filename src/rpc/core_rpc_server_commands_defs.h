@@ -1178,7 +1178,8 @@ namespace cryptonote
       uint64_t num_txes;
       std::vector<std::string> hash_checkpoints;
       std::string pow_hash;
-
+      uint64_t long_term_weight;
+      
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(major_version)
         KV_SERIALIZE(minor_version)
@@ -1198,6 +1199,7 @@ namespace cryptonote
         KV_SERIALIZE(num_txes)
         KV_SERIALIZE(hash_checkpoints)
         KV_SERIALIZE(pow_hash)
+        KV_SERIALIZE_OPT(long_term_weight, (uint64_t)0)
       END_KV_SERIALIZE_MAP()
   };
 
