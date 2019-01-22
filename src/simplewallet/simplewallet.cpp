@@ -4010,14 +4010,9 @@ bool simple_wallet::start_mining(const std::vector<std::string>& args)
 
   COMMAND_RPC_START_MINING::request req = AUTO_VAL_INIT(req);
   req.miner_address = m_wallet->get_account().get_public_address_str(m_wallet->nettype());
-  auto pwd_container = tools::password_container::prompt(false, "Enter your password to start mining");
-  if (!pwd_container) {
-    MERROR("Couldn't read password");
-  }
-  auto pwd = pwd_container->password();
-  m_wallet->decrypt_keys(pwd);
+  tools::msg_writer() << tr("Enter your wallet password to continue");
+  SCOPED_WALLET_UNLOCK();
   req.miner_key = epee::string_tools::pod_to_hex(m_wallet->get_account().get_keys().m_spend_secret_key);
-  m_wallet->encrypt_keys(pwd);
 
   bool ok = true;
   size_t arg_size = args.size();
