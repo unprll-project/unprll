@@ -43,8 +43,8 @@ using namespace epee;
 namespace
 {
   // This number was picked by taking the leading 4 bytes from this output:
-  // echo Monero bootstrap file | sha1sum
-  const uint32_t blockchain_raw_magic = 0x28721586;
+  // echo Unprll bootstrap file | sha1sum
+  const uint32_t blockchain_raw_magic = 0x20e22772;
   const uint32_t header_size = 1024;
 
   std::string refresh_string = "\r                                    \r";
@@ -207,10 +207,14 @@ void BootstrapFile::flush_chunk()
   MDEBUG("flushed chunk:  chunk_size: " << chunk_size);
 }
 
-void BootstrapFile::write_block(block& block)
+void BootstrapFile::write_block(block& block, bool pruned)
 {
   bootstrap::block_package bp;
   bp.block = block;
+
+  if (pruned) {
+    bp.block.hash_checkpoints.clear();
+  }
 
   std::vector<transaction> txs;
 
@@ -224,7 +228,18 @@ void BootstrapFile::write_block(block& block)
     {
       throw std::runtime_error("Aborting: tx == null_hash");
     }
-    transaction tx = m_blockchain_storage->get_db().get_tx(tx_id);
+
+    blobdata bd;
+    transaction tx;
+
+    if (pruned) {
+      if (!m_blockchain_storage->get_db().get_pruned_tx_blob(tx_id, bd))
+        throw DB_ERROR("Transaction not found in db");
+      if (!parse_and_validate_tx_base_from_blob(bd, tx))
+        throw DB_ERROR("Failed to parse transaction from blob retrieved from the db");
+    } else {
+      tx = m_blockchain_storage->get_db().get_tx(tx_id);
+    }
 
     txs.push_back(tx);
   }
@@ -261,7 +276,7 @@ bool BootstrapFile::close()
 }
 
 
-bool BootstrapFile::store_blockchain_raw(Blockchain* _blockchain_storage, tx_memory_pool* _tx_pool, boost::filesystem::path& output_file, uint64_t requested_block_stop)
+bool BootstrapFile::store_blockchain_raw(Blockchain* _blockchain_storage, tx_memory_pool* _tx_pool, boost::filesystem::path& output_file, bool pruned, uint64_t requested_block_stop)
 {
   uint64_t num_blocks_written = 0;
   m_max_chunk = 0;
@@ -297,7 +312,7 @@ bool BootstrapFile::store_blockchain_raw(Blockchain* _blockchain_storage, tx_mem
     // this method's height refers to 0-based height (genesis block = height 0)
     crypto::hash hash = m_blockchain_storage->get_block_id_by_height(m_cur_height);
     m_blockchain_storage->get_block_by_hash(hash, b);
-    write_block(b);
+    write_block(b, pruned);
     if (m_cur_height % NUM_BLOCKS_PER_CHUNK == 0) {
       flush_chunk();
       num_blocks_written += NUM_BLOCKS_PER_CHUNK;
