@@ -168,7 +168,7 @@ bool gen_block_reward::generate(std::vector<test_event_entry>& events) const
   DO_CALLBACK(events, "mark_checked_block");
 
   block blk_5r;
-  if (!rewind_blocks(events, generator, blk_5r, blk_5, miner_account, CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW))
+  if (!rewind_blocks(events, generator, blk_5r, blk_5, miner_account, CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1))
     return false;
 
   // Test: fee increases block reward

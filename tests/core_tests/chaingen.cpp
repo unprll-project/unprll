@@ -528,7 +528,7 @@ void fill_proof_of_work(cryptonote::block& blk, const difficulty_type& diffic, u
     crypto::cn_slow_hash(h.data, sizeof(h.data), h);
     blk.iterations += 1;
 
-    if (blk.iterations % config::HASH_CHECKPOINT_STEP == 0) {
+    if (blk.iterations % config::HASH_CHECKPOINT_STEP_V1 == 0) {
       // Add checkpoint hash
       blk.hash_checkpoints.push_back(h);
     }
@@ -570,7 +570,7 @@ bool construct_miner_tx_manually(size_t height, uint64_t already_generated_coins
   tx.vout.push_back(out);
 
   tx.version = 1;
-  tx.unlock_delta = CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW;
+  tx.unlock_delta = CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1;
 
   return true;
 }
