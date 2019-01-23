@@ -937,7 +937,7 @@ namespace cryptonote
   bool core::clear_dandelion_embargo()
   {
     std::vector<std::pair<crypto::hash, cryptonote::blobdata>> move_to_fluff;
-    m_blockchain_storage.for_all_txpool_txes([this, &move_to_fluff](const crypto::hash &txid, const txpool_tx_meta_t &meta, const cryptonote::blobdata *blob) {
+    m_blockchain_storage.for_all_txpool_txes([&move_to_fluff](const crypto::hash &txid, const txpool_tx_meta_t &meta, const cryptonote::blobdata *blob) {
       uint64_t tx_age = time(nullptr) - meta.receive_time;
 
       if(meta.dandelion_stem && tx_age > config::DANDELION_TX_EMBARGO_PERIOD)

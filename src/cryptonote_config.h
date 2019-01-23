@@ -261,5 +261,5 @@ namespace cryptonote
       case FAKECHAIN: return mainnet;
       default: throw std::runtime_error("Invalid network type");
     }
-  };
+  }
 }
