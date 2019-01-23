@@ -410,19 +410,10 @@ uint32_t s_box[4][256] =
     f1(k[0],k[1],tr[6],tm[6]);  \
     f2(k[7],k[0],tr[7],tm[7])
 
-// RNJC
-#if defined(_MSC_VER)
-#define THREADV __declspec(thread)
-#else
-#define THREADV __thread
-#endif
-
-THREADV uint32_t  l_key[96];
-// RNJC
-
 /* initialise the key schedule from the user supplied key   */
-
-uint32_t *cast256_set_key(const uint32_t in_key[], const uint32_t key_len)
+// RNJC
+void cast256_set_key(const uint32_t in_key[], const uint32_t key_len, uint32_t l_key[])
+// RNJC
 {   uint32_t  i, j, t, u, cm, cr, lk[8], tm[8], tr[8];
 
     for(i = 0; i < key_len / 32; ++i)
@@ -458,13 +449,12 @@ uint32_t *cast256_set_key(const uint32_t in_key[], const uint32_t key_len)
         l_key[i + 4] = lk[7]; l_key[i + 5] = lk[5];
         l_key[i + 6] = lk[3]; l_key[i + 7] = lk[1];
     }
-
-    return l_key;
-};
+}
 
 /* encrypt a block of text  */
-
-void cast256_encrypt(const uint32_t in_blk[4], uint32_t out_blk[])
+// RNJC
+void cast256_encrypt(const uint32_t in_blk[4], const uint32_t l_key[96], uint32_t out_blk[])
+// RNJC
 {   uint32_t  t, u, blk[4];
 
     blk[0] = io_swap(in_blk[0]); blk[1] = io_swap(in_blk[1]);
@@ -479,11 +469,12 @@ void cast256_encrypt(const uint32_t in_blk[4], uint32_t out_blk[])
 
     out_blk[0] = io_swap(blk[0]); out_blk[1] = io_swap(blk[1]);
     out_blk[2] = io_swap(blk[2]); out_blk[3] = io_swap(blk[3]);
-};
+}
 
 /* decrypt a block of text  */
-
-void cast256_decrypt(const uint32_t in_blk[4], uint32_t out_blk[4])
+// RNJC
+void cast256_decrypt(const uint32_t in_blk[4], const uint32_t l_key[96], uint32_t out_blk[4])
+// RNJC
 {   uint32_t  t, u, blk[4];
 
     blk[0] = io_swap(in_blk[0]); blk[1] = io_swap(in_blk[1]);
@@ -498,4 +489,4 @@ void cast256_decrypt(const uint32_t in_blk[4], uint32_t out_blk[4])
 
     out_blk[0] = io_swap(blk[0]); out_blk[1] = io_swap(blk[1]);
     out_blk[2] = io_swap(blk[2]); out_blk[3] = io_swap(blk[3]);
-};
+}

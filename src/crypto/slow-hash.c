@@ -171,9 +171,11 @@ void cn_slow_hash_recursive(const void *data, size_t length, char *hash, int pre
   uint8_t b[CAST256_BLOCK_SIZE];
   uint8_t c[CAST256_BLOCK_SIZE];
   uint8_t d[CAST256_BLOCK_SIZE];
+  uint8_t tmp[CAST256_BLOCK_SIZE];
   size_t i, j;
   uint8_t cast256_key[CAST256_KEY_SIZE];
   uint8_t tmp_hash[32];
+  uint32_t cast_key_schedule[96];
 
   if (prehashed) {
     memcpy(&state.hs, data, length);
@@ -183,10 +185,10 @@ void cn_slow_hash_recursive(const void *data, size_t length, char *hash, int pre
   memcpy(text, state.init, INIT_SIZE_BYTE);
   memcpy(cast256_key, state.hs.b, CAST256_KEY_SIZE / 8);
 
-  cast256_set_key((uint32_t*) cast256_key, CAST256_KEY_SIZE);
+  cast256_set_key((uint32_t*) cast256_key, CAST256_KEY_SIZE, cast_key_schedule);
   for (i = 0; i < MEMORY / INIT_SIZE_BYTE; i++) {
     for (j = 0; j < INIT_SIZE_BLK; j++) {
-      cast256_encrypt((uint32_t*) &text[CAST256_BLOCK_SIZE * j], (uint32_t*) &text[CAST256_BLOCK_SIZE * j]);
+      cast256_encrypt((uint32_t*) &text[CAST256_BLOCK_SIZE * j], cast_key_schedule, (uint32_t*) &text[CAST256_BLOCK_SIZE * j]);
     }
     memcpy(&long_state[i * INIT_SIZE_BYTE], text, INIT_SIZE_BYTE);
   }
@@ -205,19 +207,20 @@ void cn_slow_hash_recursive(const void *data, size_t length, char *hash, int pre
     copy_block(c, &long_state[j * CAST256_BLOCK_SIZE]);
     if (((a[0] ^ (i * recursion_depth)) & 3) == 0) {
         /* Iteration 1 */
-        cast256_set_key((uint32_t*) a, CAST256_KEY_SIZE / 2);
-        cast256_encrypt((uint32_t*) c, (uint32_t*)c);
+        cast256_set_key((uint32_t*) a, CAST256_KEY_SIZE / 2, cast_key_schedule);
+        cast256_encrypt((uint32_t*) c, cast_key_schedule, (uint32_t*)c);
     } else if (((a[0] ^ (i * recursion_depth)) & 3) == 1) {
         /* Iteration 2 */
         mul(a, c, d);
         sum_half_blocks(b, d);
     } else if (((a[0] ^ (i * recursion_depth)) & 3) == 2) {
         /* Iteration 3 */
-        extra_hashes[a[0] & 3](&c, CAST256_BLOCK_SIZE, (char *)(&c));
+        extra_hashes[a[0] & 3](&c, CAST256_BLOCK_SIZE, (char *)(&tmp));
+        copy_block(c, &tmp[0]);
     } else if (((a[0] ^ (i * recursion_depth)) & 3) == 3) {
         /* Iteration 4 */
-        cast256_set_key((uint32_t*) a, CAST256_KEY_SIZE / 2);
-        cast256_decrypt((uint32_t*) c, (uint32_t*)c);
+        cast256_set_key((uint32_t*) a, CAST256_KEY_SIZE / 2, cast_key_schedule);
+        cast256_decrypt((uint32_t*) c, cast_key_schedule, (uint32_t*)c);
     }
     xor_blocks(b, c);
     swap_blocks(b, c);
@@ -255,11 +258,11 @@ void cn_slow_hash_recursive(const void *data, size_t length, char *hash, int pre
   }
 
   memcpy(text, state.init, INIT_SIZE_BYTE);
-  cast256_set_key((uint32_t*) &state.hs.b[32], CAST256_KEY_SIZE);
+  cast256_set_key((uint32_t*) &state.hs.b[32], CAST256_KEY_SIZE, cast_key_schedule);
   for (i = 0; i < MEMORY / INIT_SIZE_BYTE; i++) {
     for (j = 0; j < INIT_SIZE_BLK; j++) {
       xor_blocks(&text[j * CAST256_BLOCK_SIZE], &long_state[i * INIT_SIZE_BYTE + j * CAST256_BLOCK_SIZE]);
-      cast256_encrypt((uint32_t*) &text[CAST256_BLOCK_SIZE * j], (uint32_t*) &text[CAST256_BLOCK_SIZE * j]);
+      cast256_encrypt((uint32_t*) &text[CAST256_BLOCK_SIZE * j], cast_key_schedule, (uint32_t*) &text[CAST256_BLOCK_SIZE * j]);
     }
   }
   memcpy(state.init, text, INIT_SIZE_BYTE);
