@@ -1407,6 +1407,7 @@ skip:
   template<class t_core>
   bool t_cryptonote_protocol_handler<t_core>::clear_blocked_keys()
   {
+    MDEBUG("Clearing banned miner_specific keys. Was " << m_blocked_keys.size() << " keys");
     m_blocked_keys.clear();
     return true;
   }
