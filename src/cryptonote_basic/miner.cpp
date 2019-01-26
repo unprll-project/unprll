@@ -240,14 +240,23 @@ namespace cryptonote
 
     if(command_line::has_arg(vm, arg_start_mining))
     {
-      MWARNING("Mining from the daemon is disabled currently");
-      return false;
       address_parse_info info;
       if(!cryptonote::get_account_address_from_str(info, nettype, command_line::get_arg(vm, arg_start_mining)) || info.is_subaddress)
       {
         LOG_ERROR("Target account address " << command_line::get_arg(vm, arg_start_mining) << " has wrong format, starting daemon canceled");
         return false;
       }
+      const char *env_miner_key = nullptr;
+      if ((env_miner_key = getenv("UNPRLL_MINER_KEY")) == nullptr || strlen(env_miner_key) == 0) {
+        LOG_ERROR("Miner key not provided. Starting daemon cancelled.");
+        return false;
+      }
+      if (!epee::string_tools::hex_to_pod(env_miner_key, m_miner_key))
+      {
+        LOG_ERROR("Could not parse miner key. Starting daemon cancelled.");
+        return false;
+      }
+
       m_mine_address = info.address;
       m_threads_total = 1;
       m_do_mining = true;

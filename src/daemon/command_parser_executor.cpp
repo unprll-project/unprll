@@ -263,8 +263,6 @@ bool t_command_parser_executor::print_transaction_pool_stats(const std::vector<s
 
 bool t_command_parser_executor::start_mining(const std::vector<std::string>& args)
 {
-  std::cout << "Mining from the daemon is disabled currently" << std::endl;
-  return true;
   if(!args.size())
   {
     std::cout << "Please specify a wallet address to mine for: start_mining <addr>" << std::endl;
@@ -350,7 +348,19 @@ bool t_command_parser_executor::start_mining(const std::vector<std::string>& arg
     }
   }
 
-  m_executor.start_mining(info.address, nettype, do_background_mining, ignore_battery);
+  const char *env_miner_key = nullptr;
+  if ((env_miner_key = getenv("UNPRLL_MINER_KEY")) == nullptr || strlen(env_miner_key) == 0) {
+    tools::fail_msg_writer() << "Miner key not provided!" << std::endl;
+    return true;
+  }
+  crypto::secret_key miner_key;
+  if (!epee::string_tools::hex_to_pod(env_miner_key, miner_key))
+  {
+    tools::fail_msg_writer() << "Could not parse miner key!" << std::endl;
+    return true;
+  }
+
+  m_executor.start_mining(info.address, miner_key, nettype, do_background_mining, ignore_battery);
 
   return true;
 }

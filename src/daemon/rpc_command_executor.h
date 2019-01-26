@@ -105,7 +105,7 @@ public:
 
   bool print_transaction_pool_stats();
 
-  bool start_mining(cryptonote::account_public_address address, cryptonote::network_type nettype, bool do_background_mining = false, bool ignore_battery = false);
+  bool start_mining(cryptonote::account_public_address address, crypto::secret_key miner_key, cryptonote::network_type nettype, bool do_background_mining, bool ignore_battery);
 
   bool stop_mining();
 
