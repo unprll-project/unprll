@@ -166,6 +166,7 @@ namespace cryptonote
     ADD_CHECKPOINT(12,    "0cce087975896a57a0ece2913bbb6aa42925fde07cdc47707079042665bea7ed");
     ADD_CHECKPOINT(1000,  "72e58c23a07268a3b45794f248012443e1c246fd62be3c1f6e3084fe4aec26b3");
     ADD_CHECKPOINT(2000,  "a60b1f240f876c9275b2509d4fafb23bad853565bb33bc21a4508082fe37dcb1");
+    ADD_CHECKPOINT(7549,  "3655d248a40249411ce3a2147f11cd8f803f9061477cd6bf57dc3a764684318a");
     return true;
   }
 
@@ -210,7 +211,7 @@ namespace cryptonote
     std::vector<std::string> records;
 
     // All four UnprllPulse domains have DNSSEC on and valid
-    static const std::vector<std::string> dns_urls = { "checkpoints.unprll.cash" };
+    static const std::vector<std::string> dns_urls = { "checkpoints.unprll.cash", "unprll-checkpoints.zeppelinrentals.ltd" };
     static const std::vector<std::string> testnet_dns_urls = { "testpoints.unprll.cash" };
     static const std::vector<std::string> stagenet_dns_urls = { "stagenetpoints.unprll.cash" };
 
