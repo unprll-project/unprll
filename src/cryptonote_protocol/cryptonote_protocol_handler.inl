@@ -442,6 +442,7 @@ namespace cryptonote
       if (!epee::string_tools::parse_hexstr_to_binbuff(arg.block_id, buf)) {
           LOG_DEBUG_CC(context, "Failed to parse block id");
           drop_connection(context, false, false);
+          m_core.resume_mine();
           return 1;
       }
 
@@ -451,6 +452,7 @@ namespace cryptonote
       if (!m_core.get_block_by_hash(block_id, b)) {
           // Likely that we received our own invalid block broadcast. Drop connection
           drop_connection(context, false, false);
+          m_core.resume_mine();
           return 1;
       }
 
@@ -459,6 +461,7 @@ namespace cryptonote
       if (arg.checkpoint * checkpoint_step >= b.iterations) {
           // Invalid checkpoint that... isn't part of the checkpoints?
           drop_connection(context, true, false);
+          m_core.resume_mine();
           return 1;
       }
 
