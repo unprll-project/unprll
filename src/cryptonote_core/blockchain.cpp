@@ -307,7 +307,7 @@ uint64_t Blockchain::get_current_blockchain_height() const
 //------------------------------------------------------------------
 //FIXME: possibly move this into the constructor, to avoid accidentally
 //       dereferencing a null BlockchainDB pointer
-bool Blockchain::init(BlockchainDB* db, i_cryptonote_protocol* pprotocol, const network_type nettype, bool offline, const cryptonote::test_options *test_options, difficulty_type fixed_difficulty)
+bool Blockchain::init(BlockchainDB* db, i_cryptonote_protocol* pprotocol, bool verify_entire_pow, const network_type nettype, bool offline, const cryptonote::test_options *test_options, difficulty_type fixed_difficulty)
 {
   LOG_PRINT_L3("Blockchain::" << __func__);
   CRITICAL_REGION_LOCAL(m_tx_pool);
@@ -409,6 +409,7 @@ bool Blockchain::init(BlockchainDB* db, i_cryptonote_protocol* pprotocol, const 
 #endif
 
   m_pprotocol = pprotocol;
+  m_verify_entire_pow = verify_entire_pow;
 
   MINFO("Blockchain initialized. last block: " << m_db->height() - 1 << ", " << epee::misc_utils::get_time_interval_string(timestamp_diff) << " time ago, current difficulty: " << get_difficulty_for_next_block());
   m_db->block_txn_stop();
@@ -464,11 +465,11 @@ bool Blockchain::init(BlockchainDB* db, i_cryptonote_protocol* pprotocol, const 
   return true;
 }
 //------------------------------------------------------------------
-bool Blockchain::init(BlockchainDB* db, HardFork*& hf, i_cryptonote_protocol* pprotocol, const network_type nettype, bool offline)
+bool Blockchain::init(BlockchainDB* db, HardFork*& hf, i_cryptonote_protocol* pprotocol, bool verify_entire_pow, const network_type nettype, bool offline)
 {
   if (hf != nullptr)
     m_hardfork = hf;
-  bool res = init(db, pprotocol, nettype, offline, NULL);
+  bool res = init(db, pprotocol, verify_entire_pow, nettype, offline, NULL);
   if (hf == nullptr)
     hf = m_hardfork;
   return res;
@@ -1165,7 +1166,9 @@ bool Blockchain::is_valid_checkpoint(cryptonote::block &blk, const uint64_t chec
     while (i < std::min((blk.iterations - (checkpoint * checkpoint_step)), checkpoint_step)) {
         if (check_hash(checkpoint_start, diff)) {
             slow_hash_free_state();
-            rollback_blockchain_switching(empty, height);
+            if (m_verify_entire_pow) {
+              rollback_blockchain_switching(empty, height);
+            }
             return false;
         }
 
@@ -1178,7 +1181,9 @@ bool Blockchain::is_valid_checkpoint(cryptonote::block &blk, const uint64_t chec
     if (checkpoint_start != blk.hash_checkpoints[checkpoint + 1]) {
         // Checkpoint doesn't match
         slow_hash_free_state();
-        rollback_blockchain_switching(empty, height);
+        if (m_verify_entire_pow) {
+          rollback_blockchain_switching(empty, height);
+        }
         return false;
     }
 
@@ -1301,7 +1306,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
       crypto::hash blk_hash = cryptonote::get_block_hash(block);
 
       // Start from a random position
-      uint64_t rand_start = crypto::rand<uint64_t>() % iterations;
+      uint64_t rand_start = m_verify_entire_pow ? 0 : (crypto::rand<uint64_t>() % iterations);
 
       for (uint32_t i = 0; i < threads_count; i += 1) {
           m_threads.push_back(boost::thread(attrs, [this, rand_start, hash_checkpoints, threads_count, current_diff, iterations, i, height, blk_hash, checkpoint_step]() {
@@ -1313,7 +1318,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                   for (uint64_t j = 0; j < std::min((iterations - (pos * checkpoint_step)), checkpoint_step); j += 1) {
                       // If there's an earlier hash that is valid, invalidate block
                       if (check_hash(h, current_diff)) {
-                          MERROR("[" << i << "] Premature valid hash");
+                          MERROR_VER("[" << i << "] Premature valid hash");
                           std::list<cryptonote::block> empty;
                           rollback_blockchain_switching(empty, height);
                           notify_invalid_block(blk_hash, pos);
@@ -1323,7 +1328,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                   }
 
                   if (hash_checkpoints[pos + 1] != h) {
-                      MERROR("[" << i << "] Mismatched hash in checkpoint");
+                      MERROR_VER("[" << i << "] Mismatched hash in checkpoint");
                       std::list<cryptonote::block> empty;
                       rollback_blockchain_switching(empty, height);
                       notify_invalid_block(blk_hash, pos);
@@ -1334,7 +1339,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                   checkpoints_verified += threads_count;
 
                   // Probabilistic verification
-                  if (h == hash_checkpoints.back() || double(checkpoints_verified) / hash_checkpoints.size() > config::BLOCK_VALID_THRESHOLD) {
+                  if (h == hash_checkpoints.back() || (!m_verify_entire_pow && double(checkpoints_verified) / hash_checkpoints.size() > config::BLOCK_VALID_THRESHOLD)) {
                       break;
                   }
               }

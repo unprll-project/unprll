@@ -122,7 +122,7 @@ namespace cryptonote
      *
      * @return true on success, false if any initialization steps fail
      */
-    bool init(BlockchainDB* db, i_cryptonote_protocol* pprotocol, const network_type nettype = MAINNET, bool offline = false, const cryptonote::test_options *test_options = NULL, difficulty_type fixed_difficulty = 0);
+    bool init(BlockchainDB* db, i_cryptonote_protocol* pprotocol, bool verify_entire_pow, const network_type nettype = MAINNET, bool offline = false, const cryptonote::test_options *test_options = NULL, difficulty_type fixed_difficulty = 0);
 
     /**
      * @brief Initialize the Blockchain state
@@ -134,7 +134,7 @@ namespace cryptonote
      *
      * @return true on success, false if any initialization steps fail
      */
-    bool init(BlockchainDB* db, HardFork*& hf, i_cryptonote_protocol* pprotocol, const network_type nettype = MAINNET, bool offline = false);
+    bool init(BlockchainDB* db, HardFork*& hf, i_cryptonote_protocol* pprotocol, bool verify_entire_pow, const network_type nettype = MAINNET, bool offline = false);
 
     /**
      * @brief Uninitializes the blockchain state
@@ -1003,6 +1003,7 @@ namespace cryptonote
     std::list<boost::thread> m_threads;
 
     blockchain_db_sync_mode m_db_sync_mode;
+    bool m_verify_entire_pow;
     bool m_fast_sync;
     bool m_show_time_stats;
     bool m_db_default_sync;

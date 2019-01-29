@@ -174,9 +174,13 @@ namespace cryptonote
   , "Run a program for each new block, '%s' will be replaced by the block hash"
   , ""
   };
-  const command_line::arg_descriptor<bool> arg_disable_broadcasts = {
+  static const command_line::arg_descriptor<bool> arg_disable_broadcasts = {
     "disable-broadcasts"
   , "Do not print and rebroadcast network message broadcasts"
+  };
+  static const command_line::arg_descriptor<bool> arg_disable_networked_verifier = {
+    "disable-networked-verifier"
+  , "Verify block PoW completely without relying on INVALID_BLOCK broadcasts"
   };
 
   //-----------------------------------------------------------------------------------------------
@@ -289,6 +293,7 @@ namespace cryptonote
     command_line::add_arg(desc, arg_max_txpool_weight);
     command_line::add_arg(desc, arg_block_notify);
     command_line::add_arg(desc, arg_disable_broadcasts);
+    command_line::add_arg(desc, arg_disable_networked_verifier);
 
     miner::init_options(desc);
     BlockchainDB::init_options(desc);
@@ -574,7 +579,7 @@ namespace cryptonote
       regtest_hard_forks
     };
     const difficulty_type fixed_difficulty = command_line::get_arg(vm, arg_fixed_difficulty);
-    r = m_blockchain_storage.init(db.release(), m_pprotocol, m_nettype, m_offline, regtest ? &regtest_test_options : test_options, fixed_difficulty);
+    r = m_blockchain_storage.init(db.release(), m_pprotocol, get_arg(vm, arg_disable_networked_verifier), m_nettype, m_offline, regtest ? &regtest_test_options : test_options, fixed_difficulty);
 
     r = m_mempool.init(max_txpool_weight);
     CHECK_AND_ASSERT_MES(r, false, "Failed to initialize memory pool");
