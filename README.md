@@ -138,7 +138,7 @@ invokes cmake commands as needed.
 * Change to the root of the source code directory, change to the most recent release branch, and build:
 
         cd unprll
-        git checkout v0.1.0.0
+        git checkout <branch>
         make
 
     *Optional*: If your machine has several cores and enough memory, enable
@@ -199,7 +199,7 @@ Tested on a Raspberry Pi Zero with a clean install of minimal Raspbian Stretch (
 ```
         git clone https://github.com/unprll-project/unprll.git
 	cd unprll
-	git checkout tags/v0.1.0.0
+	git checkout <branch>
 ```
 * Build:
 ```
@@ -262,7 +262,7 @@ Binaries for Windows are built on GNU/Linux using the depends toolchain. The too
 
 * If you would like a specific [version/tag](https://github.com/unprll-project/unprll/tags), do a git checkout for that version. eg. 'v0.1.0.0'. If you dont care about the version and just want binaries from master, skip this step:
 
-        git checkout v0.11.0.0
+        git checkout <branch>
 
 * If you are on a 64-bit system, run:
 
