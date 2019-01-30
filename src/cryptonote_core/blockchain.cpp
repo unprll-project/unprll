@@ -1324,10 +1324,12 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                       // If there's an earlier hash that is valid, invalidate block
                       if (check_hash(h, current_diff)) {
                           MERROR_VER("[" << i << "] Premature valid hash");
-                          std::list<cryptonote::block> empty;
-                          rollback_blockchain_switching(empty, height);
-                          m_blocked_keys.push_back(miner_specific);
-                          notify_invalid_block(blk_hash, pos);
+                          if (m_db->block_exists(blk_hash)) {
+                              std::list<cryptonote::block> empty;
+                              rollback_blockchain_switching(empty, height);
+                              m_blocked_keys.push_back(miner_specific);
+                              notify_invalid_block(blk_hash, pos);
+                          }
                           return;
                       }
                       cn_slow_hash(h.data, sizeof(h.data), h);
@@ -1335,10 +1337,12 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
 
                   if (hash_checkpoints[pos + 1] != h) {
                       MERROR_VER("[" << i << "] Mismatched hash in checkpoint");
-                      std::list<cryptonote::block> empty;
-                      rollback_blockchain_switching(empty, height);
-                      m_blocked_keys.push_back(miner_specific);
-                      notify_invalid_block(blk_hash, pos);
+                      if (m_db->block_exists(blk_hash)) {
+                          std::list<cryptonote::block> empty;
+                          rollback_blockchain_switching(empty, height);
+                          m_blocked_keys.push_back(miner_specific);
+                          notify_invalid_block(blk_hash, pos);
+                      }
                       return;
                   }
 
