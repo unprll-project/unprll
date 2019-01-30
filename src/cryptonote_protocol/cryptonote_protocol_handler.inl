@@ -431,13 +431,10 @@ namespace cryptonote
         return 1;
       }
 
-      m_core.pause_mine();
-
       cryptonote::blobdata buf;
       if (!epee::string_tools::parse_hexstr_to_binbuff(arg.block_id, buf)) {
           LOG_DEBUG_CC(context, "Failed to parse block id");
           drop_connection(context, false, false);
-          m_core.resume_mine();
           return 1;
       }
 
@@ -447,9 +444,10 @@ namespace cryptonote
       if (!m_core.get_block_by_hash(block_id, b)) {
           // Likely that we received our own invalid block broadcast. Drop connection
           drop_connection(context, false, false);
-          m_core.resume_mine();
           return 1;
       }
+
+      m_core.pause_mine();
 
       uint64_t const checkpoint_step = (m_core.get_ideal_hard_fork_version() >= HF_VERSION_BLOCK_TIME_REDUCTION) ? config::HASH_CHECKPOINT_STEP_V2 : config::HASH_CHECKPOINT_STEP_V1;
 
