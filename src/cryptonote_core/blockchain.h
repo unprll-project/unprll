@@ -947,6 +947,8 @@ namespace cryptonote
     bool is_within_compiled_block_hash_area() const { return is_within_compiled_block_hash_area(m_db->height()); }
     uint64_t prevalidate_block_hashes(uint64_t height, const std::vector<crypto::hash> &hashes);
 
+    bool clear_blocked_keys();
+
     void lock();
     void unlock();
 
@@ -1032,6 +1034,8 @@ namespace cryptonote
     // some invalid blocks
     blocks_ext_by_hash m_invalid_blocks;     // crypto::hash -> block_extended_info
 
+    // Banned miner_specifics
+    std::vector<crypto::public_key> m_blocked_keys;
 
     checkpoints m_checkpoints;
     bool m_enforce_dns_checkpoints;

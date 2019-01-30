@@ -1166,6 +1166,7 @@ bool Blockchain::is_valid_checkpoint(cryptonote::block &blk, const uint64_t chec
     while (i < std::min((blk.iterations - (checkpoint * checkpoint_step)), checkpoint_step)) {
         if (check_hash(checkpoint_start, diff)) {
             slow_hash_free_state();
+            m_blocked_keys.push_back(blk.miner_specific);
             if (m_verify_entire_pow) {
               rollback_blockchain_switching(empty, height);
             }
@@ -1181,6 +1182,7 @@ bool Blockchain::is_valid_checkpoint(cryptonote::block &blk, const uint64_t chec
     if (checkpoint_start != blk.hash_checkpoints[checkpoint + 1]) {
         // Checkpoint doesn't match
         slow_hash_free_state();
+        m_blocked_keys.push_back(blk.miner_specific);
         if (m_verify_entire_pow) {
           rollback_blockchain_switching(empty, height);
         }
@@ -1277,12 +1279,14 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
           // If there's an earlier hash that is valid, invalidate block
           if (check_hash(proof_of_work, current_diff)) {
               slow_hash_free_state();
+              m_blocked_keys.push_back(block.miner_specific);
               return false;
           }
 
           // If the current iteration is listed in checkpoints, check if the hash matches
           if (i % checkpoint_step == 0 && hash_checkpoints[(i / checkpoint_step)] != proof_of_work) {
               slow_hash_free_state();
+              m_blocked_keys.push_back(block.miner_specific);
               return false;
           }
 
@@ -1304,12 +1308,13 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
       boost::thread::attributes attrs;
       attrs.set_stack_size(THREAD_STACK_SIZE);
       crypto::hash blk_hash = cryptonote::get_block_hash(block);
+      crypto::public_key miner_specific = block.miner_specific;
 
       // Start from a random position
       uint64_t rand_start = m_verify_entire_pow ? 0 : (crypto::rand<uint64_t>() % iterations);
 
       for (uint32_t i = 0; i < threads_count; i += 1) {
-          m_threads.push_back(boost::thread(attrs, [this, rand_start, hash_checkpoints, threads_count, current_diff, iterations, i, height, blk_hash, checkpoint_step]() {
+          m_threads.push_back(boost::thread(attrs, [this, rand_start, hash_checkpoints, threads_count, current_diff, iterations, i, height, blk_hash, checkpoint_step, miner_specific]() {
               uint64_t pos = rand_start + i;
               uint64_t checkpoints_verified = i;
               while (pos < hash_checkpoints.size() && iterations > pos * checkpoint_step) {
@@ -1321,6 +1326,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                           MERROR_VER("[" << i << "] Premature valid hash");
                           std::list<cryptonote::block> empty;
                           rollback_blockchain_switching(empty, height);
+                          m_blocked_keys.push_back(miner_specific);
                           notify_invalid_block(blk_hash, pos);
                           return;
                       }
@@ -1331,6 +1337,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                       MERROR_VER("[" << i << "] Mismatched hash in checkpoint");
                       std::list<cryptonote::block> empty;
                       rollback_blockchain_switching(empty, height);
+                      m_blocked_keys.push_back(miner_specific);
                       notify_invalid_block(blk_hash, pos);
                       return;
                   }
@@ -1731,10 +1738,6 @@ bool Blockchain::handle_alternative_block(const block& b, const crypto::hash& id
       return false;
     }
 
-    // FIXME:
-    // this brings up an interesting point: consider allowing to get block
-    // difficulty both by height OR by hash, not just height.
-    difficulty_type main_chain_cumulative_difficulty = m_db->get_block_cumulative_difficulty(m_db->height() - 1);
     if (alt_chain.size())
     {
       bei.cumulative_difficulty = it_prev->second.cumulative_difficulty;
@@ -1752,6 +1755,47 @@ bool Blockchain::handle_alternative_block(const block& b, const crypto::hash& id
     CHECK_AND_ASSERT_MES(i_res.second, false, "insertion of new alternative block returned as it already exist");
     alt_chain.push_back(i_res.first);
 
+    // Penalize chains containing invalid miner_specifics by nullifying their
+    // contribution to cumulative_difficulty
+    // TODO: Add code here for penalites using first-seen timestamps
+    uint64_t common_cumulative_difficulty = m_db->get_block_cumulative_difficulty(m_db->get_block_height(alt_chain.front()->second.bl.prev_id)),
+      main_chain_score = common_cumulative_difficulty,
+      alt_chain_score = common_cumulative_difficulty;
+
+    // FIXME:
+    // this brings up an interesting point: consider allowing to get block
+    // difficulty both by height OR by hash, not just height.
+    difficulty_type main_chain_cumulative_difficulty = m_db->get_block_cumulative_difficulty(m_db->height() - 1);
+
+    // Compute main chain score
+    for (size_t i = m_db->get_block_height(alt_chain.front()->second.bl.prev_id) + 1; i < m_db->height(); i += 1) {
+      difficulty_type diff = m_db->get_block_difficulty(i);
+      block b = m_db->get_block_from_height(i);
+
+      if (std::find(m_blocked_keys.begin(), m_blocked_keys.end(), b.miner_specific) == m_blocked_keys.end()) {
+        main_chain_score += diff;
+      } else {
+        // Blocked key. Negate their contribution
+        main_chain_score -= std::min(main_chain_score, diff);
+      }
+    }
+
+    // Compute alt chain score
+    auto alt_chain_it = alt_chain.begin();
+    difficulty_type alt_chain_cumulative_difficulty = common_cumulative_difficulty;
+    while (alt_chain_it != alt_chain.end()) {
+      auto it = *alt_chain_it;
+      difficulty_type diff = it->second.cumulative_difficulty - alt_chain_cumulative_difficulty;
+      alt_chain_cumulative_difficulty += diff;
+      if (std::find(m_blocked_keys.begin(), m_blocked_keys.end(), it->second.bl.miner_specific) == m_blocked_keys.end()) {
+        alt_chain_score += diff;
+      } else {
+        // Blocked key. Negate their contribution
+        alt_chain_score -= std::min(alt_chain_score, diff);
+      }
+      alt_chain_it++;
+    }
+
     // FIXME: is it even possible for a checkpoint to show up not on the main chain?
     if(is_a_checkpoint)
     {
@@ -1765,7 +1809,7 @@ bool Blockchain::handle_alternative_block(const block& b, const crypto::hash& id
 
       return r;
     }
-    else if(main_chain_cumulative_difficulty < bei.cumulative_difficulty) //check if difficulty bigger then in main chain
+    else if(main_chain_score < alt_chain_score) //check if difficulty bigger then in main chain
     {
       //do reorganize!
       MGINFO_GREEN("###### REORGANIZE on height: " << alt_chain.front()->second.height << " of " << m_db->height() - 1 << " with cum_difficulty " << m_db->get_block_cumulative_difficulty(m_db->height() - 1) << std::endl << " alternative blockchain size: " << alt_chain.size() << " with cum_difficulty " << bei.cumulative_difficulty);
@@ -3767,8 +3811,9 @@ bool Blockchain::add_new_block(const block& bl_, block_verification_context& bvc
     return false;
   }
 
-  //check that block refers to chain tail
-  if(!(bl.prev_id == get_tail_id()))
+  //check that block refers to chain tail, and that it is not from a banned
+  //miner_specific
+  if(!(bl.prev_id == get_tail_id()) || std::find(m_blocked_keys.begin(), m_blocked_keys.end(), bl.miner_specific) != m_blocked_keys.end())
   {
     //chain switching or wrong block
     bvc.m_added_to_main_chain = false;
@@ -3811,7 +3856,7 @@ void Blockchain::check_against_checkpoints(const checkpoints& points, bool enfor
       }
       else
       {
-        LOG_ERROR("WARNING: local blockchain failed to pass an UnprllPulse checkpoint, and you could be on a fork. You should either sync up from scratch, OR download a fresh blockchain bootstrap, OR enable checkpoint enforcing with the --enforce-dns-checkpointing command-line option");
+        LOG_ERROR("WARNING: local blockchain failed to pass an UnprllPulse checkpoint, and you could be on a fork. You should either sync up from scratch, OR download a fresh blockchain bootstrap, OR enable checkpoint enforcing with the --enforce-dns-checkpointing command-line option OR pop some blocks using 'unprll-blockchain-import --pop-blocks 50'");
       }
     }
   }
@@ -4062,7 +4107,13 @@ uint64_t Blockchain::prevalidate_block_hashes(uint64_t height, const std::vector
   CHECK_AND_ASSERT_MES(usable < std::numeric_limits<uint64_t>::max() / 2, 0, "usable is negative");
   return usable;
 }
-
+//------------------------------------------------------------------------------------------------------------------------
+bool Blockchain::clear_blocked_keys()
+{
+  MDEBUG("Clearing banned miner_specific keys. Was " << m_blocked_keys.size() << " keys");
+  m_blocked_keys.clear();
+  return true;
+}
 //------------------------------------------------------------------
 // ND: Speedups:
 // 1. Thread long_hash computations if possible (m_max_prepare_blocks_threads = nthreads, default = 4)

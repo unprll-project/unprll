@@ -369,11 +369,6 @@ namespace cryptonote
       return 1;
     }
 
-    if (std::find(m_blocked_keys.begin(), m_blocked_keys.end(), b.miner_specific) != m_blocked_keys.end()) {
-      LOG_DEBUG_CC(context, "Received block from blocked miner keys, ignored");
-      drop_connection(context, false, false);
-      return 1;
-    }
     m_core.pause_mine();
     std::vector<block_complete_entry> blocks;
     blocks.push_back(arg.b);
@@ -467,7 +462,6 @@ namespace cryptonote
 
       if (!m_core.is_valid_checkpoint(b, arg.checkpoint)) {
           LOG_DEBUG_CC(context, "INVALID CHECKPOINT IN BLOCK!");
-          m_blocked_keys.push_back(b.miner_specific);
           NOTIFY_INVALID_BLOCK::request req = AUTO_VAL_INIT(req);
 
           req.block_id = arg.block_id;
@@ -524,12 +518,6 @@ namespace cryptonote
 
     if (!crypto::check_signature(hash, b.miner_specific, arg.miner_sign)) {
       LOG_DEBUG_CC(context, "Received block with invalid miner signature, ignored");
-      drop_connection(context, false, false);
-      return 1;
-    }
-
-    if (std::find(m_blocked_keys.begin(), m_blocked_keys.end(), b.miner_specific) != m_blocked_keys.end()) {
-      LOG_DEBUG_CC(context, "Received block from blocked miner keys, ignored");
       drop_connection(context, false, false);
       return 1;
     }
@@ -1027,11 +1015,6 @@ namespace cryptonote
         drop_connection(context, false, false);
         return 1;
       }
-      if (std::find(m_blocked_keys.begin(), m_blocked_keys.end(), b.miner_specific) != m_blocked_keys.end()) {
-        LOG_DEBUG_CC(context, "Received block from blocked miner keys, ignored");
-        drop_connection(context, false, false);
-        return 1;
-      }
       if (b.miner_tx.vin.size() != 1 || b.miner_tx.vin.front().type() != typeid(txin_gen))
       {
         LOG_ERROR_CCONTEXT("sent wrong block: block: miner tx does not have exactly one txin_gen input"
@@ -1341,7 +1324,6 @@ skip:
   {
     m_idle_peer_kicker.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::kick_idle_peers, this));
     m_dandelion_stem_selector.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::select_dandelion_stem, this));
-    m_blocked_keys_clearer.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::clear_blocked_keys, this));
     return m_core.on_idle();
   }
   //------------------------------------------------------------------------------------------------------------------------
@@ -1404,14 +1386,6 @@ skip:
         m_dandelion_peer = boost::uuids::nil_uuid();
     }
 
-    return true;
-  }
-  //------------------------------------------------------------------------------------------------------------------------
-  template<class t_core>
-  bool t_cryptonote_protocol_handler<t_core>::clear_blocked_keys()
-  {
-    MDEBUG("Clearing banned miner_specific keys. Was " << m_blocked_keys.size() << " keys");
-    m_blocked_keys.clear();
     return true;
   }
   //------------------------------------------------------------------------------------------------------------------------

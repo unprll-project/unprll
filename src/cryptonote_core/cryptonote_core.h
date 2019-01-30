@@ -181,6 +181,13 @@ namespace cryptonote
      bool clear_broadcast_messages();
 
      /**
+      * @copydoc Blockchain::clear_blocked_keys
+      *
+      * @note see Blockchain::clear_blocked_keys
+      */
+     bool clear_blocked_keys();
+
+     /**
       * @copydoc Blockchain::prepare_handle_incoming_blocks
       *
       * @note see Blockchain::prepare_handle_incoming_blocks
@@ -1006,6 +1013,7 @@ namespace cryptonote
      epee::math_helper::once_a_time_seconds<60*10, true> m_check_disk_space_interval; //!< interval for checking for disk space
      epee::math_helper::once_a_time_seconds<60*10, true> m_broadcast_clearer; //!< interval for clearing broadcast messages
      epee::math_helper::once_a_time_seconds<30> m_clear_dandelion_embargo_interval; //!< interval for clearing Dandelion embargo
+     epee::math_helper::once_a_time_seconds<24 * 60 * 60> m_blocked_keys_clearer; //!< interval for clearing banned miner_specifics
 
      std::vector<std::string> m_messages; //!< stores broadcast messages
 

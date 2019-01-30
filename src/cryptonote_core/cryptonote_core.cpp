@@ -1408,6 +1408,11 @@ namespace cryptonote
       return true;
   }
   //-----------------------------------------------------------------------------------------------
+  bool core::clear_blocked_keys()
+  {
+      return m_blockchain_storage.clear_blocked_keys();
+  }
+  //-----------------------------------------------------------------------------------------------
   bool core::handle_incoming_block(const blobdata& block_blob, block_verification_context& bvc, bool update_miner_blocktemplate)
   {
     TRY_ENTRY();
@@ -1582,6 +1587,7 @@ namespace cryptonote
     m_check_disk_space_interval.do_call(boost::bind(&core::check_disk_space, this));
     m_broadcast_clearer.do_call(boost::bind(&core::clear_broadcast_messages, this));
     m_clear_dandelion_embargo_interval.do_call(boost::bind(&core::clear_dandelion_embargo, this));
+    m_blocked_keys_clearer.do_call(boost::bind(&core::clear_blocked_keys, this));
     m_miner.on_idle();
     m_mempool.on_idle();
     return true;
