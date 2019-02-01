@@ -480,10 +480,16 @@ namespace cryptonote
         b.hash_checkpoints.push_back(h);
         b.invalidate_hashes();
 
+        crypto::hash tree_hash;
+        crypto::tree_hash(b.hash_checkpoints.data(), b.hash_checkpoints.size(), tree_hash);
+
         blobdata data;
         data.append(epee::string_tools::pod_to_hex(b.miner_specific));
         data.append("@");
         data.append(boost::lexical_cast<std::string>(boost::get<cryptonote::txin_gen>(b.miner_tx.vin[0]).height));
+        data.append("@");
+        data.append(epee::string_tools::pod_to_hex(tree_hash));
+
         crypto::hash hash;
         crypto::cn_fast_hash(data.data(), data.size(), hash);
         crypto::signature signature;
