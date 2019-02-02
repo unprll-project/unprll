@@ -1931,13 +1931,10 @@ namespace cryptonote
   bool core_rpc_server::on_update(const COMMAND_RPC_UPDATE::request& req, COMMAND_RPC_UPDATE::response& res)
   {
     PERF_TIMER(on_update);
-    static const char software[] = "unprll";
 #ifdef BUILD_TAG
     static const char buildtag[] = BOOST_PP_STRINGIZE(BUILD_TAG);
-    static const char subdir[] = "cli";
 #else
     static const char buildtag[] = "source";
-    static const char subdir[] = "source";
 #endif
 
     if (req.command != "check" && req.command != "download" && req.command != "update")
@@ -1947,7 +1944,7 @@ namespace cryptonote
     }
 
     std::string version, hash;
-    if (!tools::check_updates(software, buildtag, version, hash))
+    if (!tools::check_updates(buildtag, version, hash))
     {
       res.status = "Error checking for updates";
       return true;
@@ -1960,8 +1957,8 @@ namespace cryptonote
     }
     res.update = true;
     res.version = version;
-    res.user_uri = tools::get_update_url(software, subdir, buildtag, version, true);
-    res.auto_uri = tools::get_update_url(software, subdir, buildtag, version, false);
+    res.user_uri = tools::get_update_url(buildtag, version, true);
+    res.auto_uri = tools::get_update_url(buildtag, version, false);
     res.hash = hash;
     if (req.command == "check")
     {
@@ -1972,12 +1969,7 @@ namespace cryptonote
     boost::filesystem::path path;
     if (req.path.empty())
     {
-      std::string filename;
-      const char *slash = strrchr(res.auto_uri.c_str(), '/');
-      if (slash)
-        filename = slash + 1;
-      else
-        filename = std::string(software) + "-update-" + version;
+      std::string filename = strrchr(res.auto_uri.c_str(), '/') + 1;
       path = epee::string_tools::get_current_module_folder();
       path /= filename;
     }

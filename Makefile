@@ -56,13 +56,13 @@ debug-static-all:
 
 debug-static-win64: toolchain-windows-x86_64
 	mkdir -p build/Windows-x86_64/$(subbuilddir)/debug
-	cd build/Windows/$(subbuilddir)/debug && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=Debug -D BUILD_TAG="win-x64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
+	cd build/Windows/$(subbuilddir)/debug && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=Debug -D BUILD_TAG="windows-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
 
 debug-static-win32: toolchain-windows-x86
 	cd contrib/depends && $(MAKE) HOST=i686-w64-mingw32
 	cd $(topdir)
 	mkdir -p build/Windows-x86/$(subbuilddir)/debug
-	cd build/Windows/$(subbuilddir)/debug && cmake -D STATIC=ON -D ARCH="i686" -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=Debug -D BUILD_TAG="win-x32" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/i686-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
+	cd build/Windows/$(subbuilddir)/debug && cmake -D STATIC=ON -D ARCH="i686" -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=Debug -D BUILD_TAG="windows-x86" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/i686-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
 
 cmake-release:
 	mkdir -p build/Host/$(subbuilddir)/release
@@ -108,35 +108,35 @@ release-static-linux-armv8: toolchain-linux-armv8
 
 release-static-linux-x86_64: toolchain-linux-x86_64
 	mkdir -p build/Linux-x86_64/$(subbuilddir)/release
-	cd build/Linux-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-x64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-linux-gnu/share/toolchain.cmake -D THREADS_PTHREAD_ARG="-lpthread" $(topdir) && $(MAKE)
+	cd build/Linux-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-linux-gnu/share/toolchain.cmake -D THREADS_PTHREAD_ARG="-lpthread" $(topdir) && $(MAKE)
 
 release-static-freebsd-x86_64:
 	$(error FreeBSD cross-compilation is not supported at the moment)
 	cd contrib/depends && $(MAKE) HOST=x86_64-freebsd
 	cd $(topdir)
 	mkdir -p build/FreeBSD-x86_64/$(subbuilddir)/release
-	cd build/FreeBSD-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="freebsd-x64" $(topdir) && $(MAKE)
+	cd build/FreeBSD-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="freebsd-x86_64" $(topdir) && $(MAKE)
 
 release-static-darwin-x86_64: toolchain-darwin-x86_64
 	mkdir -p build/Darwin-x86_64/$(subbuilddir)/release
-	cd build/Darwin-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="mac-x64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-apple-darwin11/share/toolchain.cmake $(topdir) && $(MAKE)
+	cd build/Darwin-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="darwin-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-apple-darwin11/share/toolchain.cmake $(topdir) && $(MAKE)
 
 release-static-linux-i686: toolchain-linux-x86
 	mkdir -p build/Linux-x86/$(subbuilddir)/release
-	cd build/Linux-x86/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="i686" -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-x86" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/i686-linux-gnu/share/toolchain.cmake $(topdir) && $(MAKE)
+	cd build/Linux-x86/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="i686" -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/i686-linux-gnu/share/toolchain.cmake $(topdir) && $(MAKE)
 
 release-static-win64: toolchain-windows-x86_64
 	cd $(topdir)
 	mkdir -p build/Windows-x86_64/$(subbuilddir)/release
-	cd build/Windows-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=Release -D BUILD_TAG="win-x64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
+	cd build/Windows-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=Release -D BUILD_TAG="windows-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
 
 release-static-win32: toolchain-windows-x86
 	mkdir -p build/Windows-x86/$(subbuilddir)/release
-	cd build/Windows-x86/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="i686" -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=Release -D BUILD_TAG="win-x32" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/i686-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
+	cd build/Windows-x86/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="i686" -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=Release -D BUILD_TAG="windows-x86" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/i686-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
 
 fuzz:
 	mkdir -p build/Host/$(subbuilddir)/fuzz
-	cd build/Host/$(subbuilddir)/fuzz && cmake -D STATIC=ON -D SANITIZE=ON -D BUILD_TESTS=ON -D USE_LTO=OFF -D CMAKE_C_COMPILER=afl-gcc -D CMAKE_CXX_COMPILER=afl-g++ -D ARCH="x86-64" -D CMAKE_BUILD_TYPE=fuzz -D BUILD_TAG="linux-x64" $(topdir) && $(MAKE)
+	cd build/Host/$(subbuilddir)/fuzz && cmake -D STATIC=ON -D SANITIZE=ON -D BUILD_TESTS=ON -D USE_LTO=OFF -D CMAKE_C_COMPILER=afl-gcc -D CMAKE_CXX_COMPILER=afl-g++ -D ARCH="x86-64" -D CMAKE_BUILD_TYPE=fuzz -D BUILD_TAG="linux-x86_64" $(topdir) && $(MAKE)
 
 clean:
 	@echo "WARNING: Back-up your wallet if it exists within ./build!" ; \

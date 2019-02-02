@@ -1647,13 +1647,10 @@ namespace cryptonote
   //-----------------------------------------------------------------------------------------------
   bool core::check_updates()
   {
-    static const char software[] = "unprll";
 #ifdef BUILD_TAG
     static const char buildtag[] = BOOST_PP_STRINGIZE(BUILD_TAG);
-    static const char subdir[] = "cli"; // because it can never be simple
 #else
     static const char buildtag[] = "source";
-    static const char subdir[] = "source"; // because it can never be simple
 #endif
 
     if (m_offline)
@@ -1663,8 +1660,8 @@ namespace cryptonote
       return true;
 
     std::string version, hash;
-    MCDEBUG("updates", "Checking for a new " << software << " version for " << buildtag);
-    if (!tools::check_updates(software, buildtag, version, hash))
+    MCDEBUG("updates", "Checking for a new Unprll version for " << buildtag);
+    if (!tools::check_updates(buildtag, version, hash))
       return false;
 
     if (tools::vercmp(version.c_str(), UNPRLL_VERSION) <= 0)
@@ -1673,20 +1670,15 @@ namespace cryptonote
       return true;
     }
 
-    std::string url = tools::get_update_url(software, subdir, buildtag, version, true);
-    MCLOG_CYAN(el::Level::Info, "global", "Version " << version << " of " << software << " for " << buildtag << " is available: " << url << ", SHA256 hash " << hash);
+    std::string url = tools::get_update_url(buildtag, version, true);
+    MCLOG_CYAN(el::Level::Info, "global", "Version " << version << " of Unprll for " << buildtag << " is available: " << url << ", SHA256 hash " << hash);
     m_update_available = true;
 
     if (check_updates_level == UPDATES_NOTIFY)
       return true;
 
-    url = tools::get_update_url(software, subdir, buildtag, version, false);
-    std::string filename;
-    const char *slash = strrchr(url.c_str(), '/');
-    if (slash)
-      filename = slash + 1;
-    else
-      filename = std::string(software) + "-update-" + version;
+    url = tools::get_update_url(buildtag, version, false);
+    std::string filename = strrchr(url.c_str(), '/') + 1;
     boost::filesystem::path path(epee::string_tools::get_current_module_folder());
     path /= filename;
 

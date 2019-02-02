@@ -37,12 +37,12 @@
 
 namespace tools
 {
-  bool check_updates(const std::string &software, const std::string &buildtag, std::string &version, std::string &hash)
+  bool check_updates(const std::string &buildtag, std::string &version, std::string &hash)
   {
     std::vector<std::string> records;
     bool found = false;
 
-    MDEBUG("Checking updates for " << buildtag << " " << software);
+    MDEBUG("Checking updates for Unprll " << buildtag);
 
     // All four UnprllPulse domains have DNSSEC on and valid
     static const std::vector<std::string> dns_urls = { "updates.unprll.cash" };
@@ -60,7 +60,7 @@ namespace tools
         continue;
       }
 
-      if (software != fields[0] || buildtag != fields[1])
+      if (buildtag != fields[1])
         continue;
 
       bool alnum = true;
@@ -80,7 +80,7 @@ namespace tools
         if (cmp > 0)
           continue;
         if (cmp == 0 && hash != fields[3])
-          MWARNING("Two matches found for " << software << " version " << version << " on " << buildtag);
+          MWARNING("Two matches found for Unprll version " << version << " on " << buildtag);
       }
 
       version = fields[2];
@@ -92,21 +92,21 @@ namespace tools
     return found;
   }
 
-  std::string get_update_url(const std::string &software, const std::string &subdir, const std::string &buildtag, const std::string &version, bool user)
+  std::string get_update_url(const std::string &buildtag, const std::string &version, bool user)
   {
-    const char *base = user ? "https://downloads.unprll.cash" : "https://updates.unprll.cash";
+  //  github.com/unprll-project/unprll/releases/download/v0.2.0.2/unprll-v0.2.0.2-linux-armv8.tar.xz
+    const char *base = "https://github.com/unprll-project/unprll/releases/download/";
 #ifdef _WIN32
-    static const char *extension = strncmp(buildtag.c_str(), "install-", 8) ? ".zip" : ".exe";
+    static const char *extension = ".zip";
 #else
-    static const char extension[] = ".tar.bz2";
+    static const char *extension = ".tar.xz";
 #endif
 
     std::string url;
 
-    url =  base;
-    if (!subdir.empty())
-      url += subdir + "/";
-    url = url + software + "-" + buildtag + "-v" + version + extension;
+    url = base;
+    std::string _version = "v" + version;
+    url = url + _version + "/unprll-" + _version + buildtag + extension;
     return url;
   }
 }
