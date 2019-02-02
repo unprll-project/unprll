@@ -37,6 +37,7 @@
 
 #include <boost/program_options/variables_map.hpp>
 #include <string>
+#include <unordered_map>
 
 #include "math_helper.h"
 #include "storages/levin_abstract_invoke2.h"
@@ -130,6 +131,7 @@ namespace cryptonote
     virtual bool relay_transactions(NOTIFY_NEW_TRANSACTIONS::request& arg, cryptonote_connection_context& exclude_context);
     virtual bool relay_invalid_block(NOTIFY_INVALID_BLOCK::request& arg, cryptonote_connection_context& exclude_context);
     virtual bool relay_broadcast_message(NOTIFY_BROADCAST_MESSAGE::request& arg, cryptonote_connection_context& exclude_context);
+		virtual void set_rate_limit(uint16_t rate_limit);
     //----------------------------------------------------------------------------------
     //bool get_payload_sync_data(HANDSHAKE_DATA::request& hshd, cryptonote_connection_context& context);
     bool request_missing_objects(cryptonote_connection_context& context, bool check_having_blocks, bool force_next_span = false);
@@ -139,6 +141,8 @@ namespace cryptonote
     void drop_connection(cryptonote_connection_context &context, bool add_fail, bool flush_all_spans);
     bool kick_idle_peers();
     bool select_dandelion_stem();
+		bool reset_rate_map();
+		bool check_request_rate(cryptonote_connection_context &context);
     int try_add_next_blocks(cryptonote_connection_context &context);
 
     t_core& m_core;
@@ -151,8 +155,11 @@ namespace cryptonote
     boost::mutex m_sync_lock;
     block_queue m_block_queue;
     epee::math_helper::once_a_time_seconds<30> m_idle_peer_kicker;
+		epee::math_helper::once_a_time_seconds<60> m_rate_resetter;
     epee::math_helper::once_a_time_seconds<600> m_dandelion_stem_selector;
     boost::uuids::uuid m_dandelion_peer;
+		uint16_t m_rate_limit;
+		std::unordered_map<std::string, uint8_t> m_rate_counter;
 
     boost::mutex m_buffer_mutex;
     double get_avg_block_size();

@@ -182,6 +182,11 @@ namespace cryptonote
     "disable-networked-verifier"
   , "Verify block PoW completely without relying on INVALID_BLOCK broadcasts"
   };
+  static const command_line::arg_descriptor<uint8_t> arg_set_p2p_rate_limit = {
+    "set-p2p-rate-limit"
+  , "Set maximum number of requests per minute allowed from other nodes"
+  , config::MAXIMUM_REQUESTS_PER_MINUTE
+  };
 
   //-----------------------------------------------------------------------------------------------
   core::core(i_cryptonote_protocol* pprotocol):
@@ -294,6 +299,7 @@ namespace cryptonote
     command_line::add_arg(desc, arg_block_notify);
     command_line::add_arg(desc, arg_disable_broadcasts);
     command_line::add_arg(desc, arg_disable_networked_verifier);
+    command_line::add_arg(desc, arg_set_p2p_rate_limit);
 
     miner::init_options(desc);
     BlockchainDB::init_options(desc);
@@ -578,6 +584,9 @@ namespace cryptonote
     const cryptonote::test_options regtest_test_options = {
       regtest_hard_forks
     };
+
+    m_pprotocol->set_rate_limit(get_arg(vm, arg_set_p2p_rate_limit));
+
     const difficulty_type fixed_difficulty = command_line::get_arg(vm, arg_fixed_difficulty);
     r = m_blockchain_storage.init(db.release(), m_pprotocol, get_arg(vm, arg_disable_networked_verifier), m_nettype, m_offline, regtest ? &regtest_test_options : test_options, fixed_difficulty);
 

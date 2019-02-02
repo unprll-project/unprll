@@ -58,9 +58,6 @@
 
 namespace cryptonote
 {
-
-
-
   //-----------------------------------------------------------------------------------------------------------------------
   template<class t_core>
     t_cryptonote_protocol_handler<t_core>::t_cryptonote_protocol_handler(t_core& rcore, nodetool::i_p2p_endpoint<connection_context>* p_net_layout, bool offline):m_core(rcore),
@@ -78,6 +75,13 @@ namespace cryptonote
   bool t_cryptonote_protocol_handler<t_core>::init(const boost::program_options::variables_map& vm)
   {
     return true;
+  }
+  //------------------------------------------------------------------------------------------------------------------------
+  template<class t_core>
+  void t_cryptonote_protocol_handler<t_core>::set_rate_limit(uint16_t rate_limit)
+  {
+    MINFO("Setting rate limit to: " << rate_limit << " requests/min");
+    m_rate_limit = rate_limit;
   }
   //------------------------------------------------------------------------------------------------------------------------
   template<class t_core>
@@ -330,8 +334,8 @@ namespace cryptonote
     return true;
   }
   //------------------------------------------------------------------------------------------------------------------------
-    template<class t_core>
-    bool t_cryptonote_protocol_handler<t_core>::get_payload_sync_data(blobdata& data)
+  template<class t_core>
+  bool t_cryptonote_protocol_handler<t_core>::get_payload_sync_data(blobdata& data)
   {
     CORE_SYNC_DATA hsd = boost::value_initialized<CORE_SYNC_DATA>();
     get_payload_sync_data(hsd);
@@ -339,9 +343,12 @@ namespace cryptonote
     return true;
   }
   //------------------------------------------------------------------------------------------------------------------------
-    template<class t_core>
-    int t_cryptonote_protocol_handler<t_core>::handle_notify_new_block(int command, NOTIFY_NEW_BLOCK::request& arg, cryptonote_connection_context& context)
+  template<class t_core>
+  int t_cryptonote_protocol_handler<t_core>::handle_notify_new_block(int command, NOTIFY_NEW_BLOCK::request& arg, cryptonote_connection_context& context)
   {
+    if (!check_request_rate(context)) {
+      return 1;
+    }
     MLOG_P2P_MESSAGE("Received NOTIFY_NEW_BLOCK (" << arg.b.txs.size() << " txes)");
     if(context.m_state != cryptonote_connection_context::state_normal)
       return 1;
@@ -428,6 +435,9 @@ namespace cryptonote
   template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::handle_notify_invalid_block(int command, NOTIFY_INVALID_BLOCK::request& arg, cryptonote_connection_context& context)
   {
+      if (!check_request_rate(context)) {
+        return 1;
+      }
       MLOG_P2P_MESSAGE("Received NOTIFY_INVALID_BLOCK");
       if(context.m_state != cryptonote_connection_context::state_normal)
         return 1;
@@ -490,8 +500,8 @@ namespace cryptonote
   template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::handle_notify_broadcast_message(int command, NOTIFY_BROADCAST_MESSAGE::request& arg, cryptonote_connection_context& context)
   {
-      MLOG_P2P_MESSAGE("Received broadcast message");
       if (m_core.show_broadcast_message(arg.message)) {
+          MLOG_P2P_MESSAGE("Received broadcast message");
           relay_broadcast_message(arg, context);
       }
       return 1;
@@ -500,6 +510,9 @@ namespace cryptonote
   template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::handle_notify_new_fluffy_block(int command, NOTIFY_NEW_FLUFFY_BLOCK::request& arg, cryptonote_connection_context& context)
   {
+    if (!check_request_rate(context)) {
+      return 1;
+    }
     MLOG_P2P_MESSAGE("Received NOTIFY_NEW_FLUFFY_BLOCK (height " << arg.current_blockchain_height << ", " << arg.b.txs.size() << " txes)");
     if(context.m_state != cryptonote_connection_context::state_normal)
       return 1;
@@ -811,6 +824,9 @@ namespace cryptonote
   template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::handle_request_fluffy_missing_tx(int command, NOTIFY_REQUEST_FLUFFY_MISSING_TX::request& arg, cryptonote_connection_context& context)
   {
+    if (!check_request_rate(context)) {
+      return 1;
+    }
     MLOG_P2P_MESSAGE("Received NOTIFY_REQUEST_FLUFFY_MISSING_TX (" << arg.missing_tx_indices.size() << " txes), block hash " << arg.block_hash);
 
     std::vector<std::pair<cryptonote::blobdata, block>> local_blocks;
@@ -888,6 +904,9 @@ namespace cryptonote
   template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::handle_notify_new_transactions(int command, NOTIFY_NEW_TRANSACTIONS::request& arg, cryptonote_connection_context& context)
   {
+    if (!check_request_rate(context)) {
+      return 1;
+    }
     MLOG_P2P_MESSAGE("Received NOTIFY_NEW_TRANSACTIONS (" << arg.txs.size() << " txes)");
     if(context.m_state != cryptonote_connection_context::state_normal)
       return 1;
@@ -930,6 +949,9 @@ namespace cryptonote
   template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::handle_request_get_objects(int command, NOTIFY_REQUEST_GET_OBJECTS::request& arg, cryptonote_connection_context& context)
   {
+    if (!check_request_rate(context)) {
+      return 1;
+    }
     MLOG_P2P_MESSAGE("Received NOTIFY_REQUEST_GET_OBJECTS (" << arg.blocks.size() << " blocks, " << arg.txs.size() << " txes)");
     NOTIFY_RESPONSE_GET_OBJECTS::request rsp;
     if(!m_core.handle_get_objects(arg, rsp, context))
@@ -946,8 +968,6 @@ namespace cryptonote
     return 1;
   }
   //------------------------------------------------------------------------------------------------------------------------
-
-
   template<class t_core>
   double t_cryptonote_protocol_handler<t_core>::get_avg_block_size()
   {
@@ -960,11 +980,12 @@ namespace cryptonote
     for (const auto &element : m_avg_buffer) avg += element;
     return avg / m_avg_buffer.size();
   }
-
-
   template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::handle_response_get_objects(int command, NOTIFY_RESPONSE_GET_OBJECTS::request& arg, cryptonote_connection_context& context)
   {
+    if (!check_request_rate(context)) {
+      return 1;
+    }
     MLOG_P2P_MESSAGE("Received NOTIFY_RESPONSE_GET_OBJECTS (" << arg.blocks.size() << " blocks, " << arg.txs.size() << " txes)");
 
     // calculate size of request
@@ -1097,7 +1118,6 @@ skip:
     try_add_next_blocks(context);
     return 1;
   }
-
   template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::try_add_next_blocks(cryptonote_connection_context& context)
   {
@@ -1336,6 +1356,7 @@ skip:
   {
     m_idle_peer_kicker.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::kick_idle_peers, this));
     m_dandelion_stem_selector.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::select_dandelion_stem, this));
+    m_rate_resetter.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::reset_rate_map, this));
     return m_core.on_idle();
   }
   //------------------------------------------------------------------------------------------------------------------------
@@ -1402,8 +1423,39 @@ skip:
   }
   //------------------------------------------------------------------------------------------------------------------------
   template<class t_core>
+  bool t_cryptonote_protocol_handler<t_core>::check_request_rate(cryptonote_connection_context &context)
+  {
+    auto it = m_rate_counter.find(context.m_remote_address.host_str());
+    if (it == m_rate_counter.end()) {
+      // New host
+      m_rate_counter.insert(std::make_pair(context.m_remote_address.host_str(), 1));
+      return true;
+    } else {
+      MDEBUG("[" << it->first.c_str() << "] Requests: " << (unsigned int)it->second);
+      // Existing host. Increment requests done
+      it->second += 1;
+      if (it->second > m_rate_limit) {
+        LOG_ERROR_CCONTEXT("Host " << it->first << " is making too many requests, dropping connection");
+        drop_connection(context, true, false);
+        return false;
+      }
+      return true;
+    }
+  }
+  //------------------------------------------------------------------------------------------------------------------------
+  template<class t_core>
+  bool t_cryptonote_protocol_handler<t_core>::reset_rate_map()
+  {
+    m_rate_counter.erase(m_rate_counter.begin(), m_rate_counter.end());
+    return true;
+  }
+  //------------------------------------------------------------------------------------------------------------------------
+  template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::handle_request_chain(int command, NOTIFY_REQUEST_CHAIN::request& arg, cryptonote_connection_context& context)
   {
+    if (!check_request_rate(context)) {
+      return 1;
+    }
     MLOG_P2P_MESSAGE("Received NOTIFY_REQUEST_CHAIN (" << arg.block_ids.size() << " blocks");
     NOTIFY_RESPONSE_CHAIN_ENTRY::request r;
     if(!m_core.find_blockchain_supplement(arg.block_ids, r))
@@ -1776,6 +1828,9 @@ skip:
   template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::handle_response_chain_entry(int command, NOTIFY_RESPONSE_CHAIN_ENTRY::request& arg, cryptonote_connection_context& context)
   {
+    if (!check_request_rate(context)) {
+      return 1;
+    }
     MLOG_P2P_MESSAGE("Received NOTIFY_RESPONSE_CHAIN_ENTRY: m_block_ids.size()=" << arg.m_block_ids.size()
       << ", m_start_height=" << arg.start_height << ", m_total_height=" << arg.total_height);
 
@@ -1954,7 +2009,6 @@ skip:
 
     m_block_queue.flush_spans(context.m_connection_id, false);
   }
-
   //------------------------------------------------------------------------------------------------------------------------
   template<class t_core>
   void t_cryptonote_protocol_handler<t_core>::stop()

@@ -44,6 +44,7 @@ namespace cryptonote
     virtual bool relay_transactions(NOTIFY_NEW_TRANSACTIONS::request& arg, cryptonote_connection_context& exclude_context)=0;
     virtual bool relay_invalid_block(NOTIFY_INVALID_BLOCK::request& arg, cryptonote_connection_context& exclude_context)=0;
     virtual bool relay_broadcast_message(NOTIFY_BROADCAST_MESSAGE::request& arg, cryptonote_connection_context& exclude_context)=0;
+    virtual void set_rate_limit(uint16_t rate_limit)=0;
     //virtual bool request_objects(NOTIFY_REQUEST_GET_OBJECTS::request& arg, cryptonote_connection_context& context)=0;
   };
 
@@ -68,6 +69,7 @@ namespace cryptonote
     {
       return false;
     }
-
+    virtual void set_rate_limit(uint16_t rate_limit)
+    { }
   };
 }

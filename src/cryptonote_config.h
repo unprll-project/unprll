@@ -171,6 +171,8 @@ namespace config
   uint8_t const UNLOCK_DELTA_BLOCK_SPANS_V1 = 4;
   uint8_t const UNLOCK_DELTA_BLOCK_SPANS_V2 = 16;
 
+  uint16_t const MAXIMUM_REQUESTS_PER_MINUTE = 5;
+
   namespace testnet
   {
     uint64_t const CRYPTONOTE_PUBLIC_ADDRESS_BASE58_PREFIX = 0x219023; // UNPT
