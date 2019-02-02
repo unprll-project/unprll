@@ -142,6 +142,7 @@ namespace cryptonote
     bool kick_idle_peers();
     bool select_dandelion_stem();
 		bool reset_rate_map();
+		bool reset_invalid_blocks_map();
 		bool check_request_rate(cryptonote_connection_context &context);
     int try_add_next_blocks(cryptonote_connection_context &context);
 
@@ -157,10 +158,13 @@ namespace cryptonote
     epee::math_helper::once_a_time_seconds<30> m_idle_peer_kicker;
 		epee::math_helper::once_a_time_seconds<60> m_rate_resetter;
     epee::math_helper::once_a_time_seconds<600> m_dandelion_stem_selector;
+		epee::math_helper::once_a_time_seconds<24 * 60 * 60> m_invalid_blocks_resetter;
     boost::uuids::uuid m_dandelion_peer;
 		uint16_t m_rate_limit;
 		std::unordered_map<std::string, uint8_t> m_rate_counter;
+		std::unordered_map<crypto::hash, uint64_t> m_invalid_blocks;
 
+		boost::mutex m_invalid_blocks_mutex;
     boost::mutex m_buffer_mutex;
     double get_avg_block_size();
     boost::circular_buffer<size_t> m_avg_buffer = boost::circular_buffer<size_t>(10);

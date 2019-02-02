@@ -439,42 +439,42 @@ namespace cryptonote
         return 1;
       }
       MLOG_P2P_MESSAGE("Received NOTIFY_INVALID_BLOCK");
-      if(context.m_state != cryptonote_connection_context::state_normal)
+
+      CRITICAL_REGION_LOCAL(m_invalid_blocks_mutex);
+      auto it = m_invalid_blocks.find(arg.block_id);
+      // Check if we have it
+      if (it != m_invalid_blocks.end()) {
         return 1;
+      } else if (it == m_invalid_blocks.end()) {
+        // Add to our record of invalid blocks
+        it = m_invalid_blocks.insert({
+          arg.block_id,
+          arg.checkpoint
+        }).first;
+      }
+
       if(!is_synchronized()) // can happen if a peer connection goes to normal but another thread still hasn't finished adding queued blocks
       {
-        LOG_DEBUG_CC(context, "Received invalid block while syncing");
-        // TODO FIXME Keep a copy of this message to avoid invalid blocks
+        LOG_DEBUG_CC(context, "Received block invalidation while syncing, kept");
         return 1;
       }
 
-      cryptonote::blobdata buf;
-      if (!epee::string_tools::parse_hexstr_to_binbuff(arg.block_id, buf)) {
-          LOG_DEBUG_CC(context, "Failed to parse block id");
-          drop_connection(context, false, false);
-          return 1;
-      }
-
-      const crypto::hash block_id = *reinterpret_cast<const crypto::hash*>(buf.data());
       block b;
-
-      if (!m_core.get_block_by_hash(block_id, b)) {
+      if (!m_core.get_block_by_hash(arg.block_id, b)) {
           // Likely that we received our own invalid block broadcast. Drop connection
           drop_connection(context, false, false);
           return 1;
       }
 
-      m_core.pause_mine();
-
       uint64_t const checkpoint_step = (m_core.get_ideal_hard_fork_version() >= HF_VERSION_BLOCK_TIME_REDUCTION) ? config::HASH_CHECKPOINT_STEP_V2 : config::HASH_CHECKPOINT_STEP_V1;
-
       if (arg.checkpoint * checkpoint_step >= b.iterations) {
-          // Invalid checkpoint that... isn't part of the checkpoints?
-          drop_connection(context, true, false);
-          m_core.resume_mine();
-          return 1;
+        // Invalid checkpoint that... isn't part of the checkpoints?
+        drop_connection(context, true, false);
+        m_invalid_blocks.erase(it);
+        return 1;
       }
 
+      m_core.pause_mine();
       if (!m_core.is_valid_checkpoint(b, arg.checkpoint)) {
           LOG_DEBUG_CC(context, "INVALID CHECKPOINT IN BLOCK!");
           NOTIFY_INVALID_BLOCK::request req = AUTO_VAL_INIT(req);
@@ -491,6 +491,7 @@ namespace cryptonote
 
       // False alarm. Drop and add to fails
       MLOG_P2P_MESSAGE("False alarm");
+      m_invalid_blocks.erase(it);
       drop_connection(context, true, false);
       m_core.resume_mine();
 
@@ -1200,12 +1201,43 @@ skip:
 
           uint64_t block_process_time_full = 0, transactions_process_time_full = 0;
           size_t num_txs = 0;
+          CRITICAL_REGION_LOCAL(m_invalid_blocks_mutex);
           for(const block_complete_entry& block_entry: blocks)
           {
             if (m_stopping)
             {
                 m_core.cleanup_handle_incoming_blocks();
                 return 1;
+            }
+
+            block b;
+            if (!parse_and_validate_block_from_blob(block_entry.block, b)) {
+              LOG_ERROR_CCONTEXT("Could not parse block");
+              return 1;
+            }
+
+            crypto::hash bl_hash;
+            get_block_hash(b, bl_hash);
+            auto invalid_it = m_invalid_blocks.find(bl_hash);
+            if (invalid_it != m_invalid_blocks.end()) {
+              // We have an invalidation broadcast from previously. Check the block
+              uint64_t checkpoint = invalid_it->second;
+              if (!m_core.is_valid_checkpoint(b, checkpoint)) {
+                // Bingo. Knock this block out and ban the key
+                LOG_ERROR_CCONTEXT("Synced block is invalid. Dropping span");
+                if (!m_p2p->for_connection(span_connection_id, [&](cryptonote_connection_context& context, nodetool::peerid_type peer_id, uint32_t f)->bool{
+                  LOG_PRINT_CCONTEXT_L1("Block verification failed, dropping connection");
+                  drop_connection(context, true, true);
+                  return 1;
+                }))
+                  LOG_ERROR_CCONTEXT("span connection id not found");
+
+                m_block_queue.remove_spans(span_connection_id, start_height);
+                return 1;
+              } else {
+                // That message seems to be invalid. Drop it.
+                m_invalid_blocks.erase(invalid_it);
+              }
             }
 
             // process transactions
@@ -1357,6 +1389,7 @@ skip:
     m_idle_peer_kicker.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::kick_idle_peers, this));
     m_dandelion_stem_selector.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::select_dandelion_stem, this));
     m_rate_resetter.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::reset_rate_map, this));
+    m_invalid_blocks_resetter.do_call(boost::bind(&t_cryptonote_protocol_handler<t_core>::reset_invalid_blocks_map, this));
     return m_core.on_idle();
   }
   //------------------------------------------------------------------------------------------------------------------------
@@ -1447,6 +1480,14 @@ skip:
   bool t_cryptonote_protocol_handler<t_core>::reset_rate_map()
   {
     m_rate_counter.erase(m_rate_counter.begin(), m_rate_counter.end());
+    return true;
+  }
+  //------------------------------------------------------------------------------------------------------------------------
+  template<class t_core>
+  bool t_cryptonote_protocol_handler<t_core>::reset_invalid_blocks_map()
+  {
+    CRITICAL_REGION_LOCAL(m_invalid_blocks_mutex);
+    m_invalid_blocks.erase(m_invalid_blocks.begin(), m_invalid_blocks.end());
     return true;
   }
   //------------------------------------------------------------------------------------------------------------------------

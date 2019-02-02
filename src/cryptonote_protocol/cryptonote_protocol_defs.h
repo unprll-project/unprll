@@ -299,11 +299,11 @@ namespace cryptonote
 
     struct request
     {
-      std::string block_id;
+      crypto::hash block_id;
       uint64_t checkpoint;
 
       BEGIN_KV_SERIALIZE_MAP()
-        KV_SERIALIZE(block_id)
+        KV_SERIALIZE_VAL_POD_AS_BLOB(block_id)
         KV_SERIALIZE(checkpoint)
       END_KV_SERIALIZE_MAP()
     };
