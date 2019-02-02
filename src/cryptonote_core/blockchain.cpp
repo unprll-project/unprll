@@ -1376,7 +1376,7 @@ void Blockchain::notify_invalid_block(const crypto::hash& h, uint64_t checkpoint
 
     cryptonote_connection_context exclude_context = boost::value_initialized<cryptonote_connection_context>();
     NOTIFY_INVALID_BLOCK::request req = {
-        epee::string_tools::pod_to_hex(h),
+        h,
         checkpoint
     };
     m_pprotocol->relay_invalid_block(req, exclude_context);
