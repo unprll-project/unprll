@@ -4018,12 +4018,12 @@ bool simple_wallet::start_mining(const std::vector<std::string>& args)
   size_t arg_size = args.size();
   if(arg_size >= 2)
   {
-    if (!parse_bool_and_use(args[2], [&](bool r) { req.ignore_battery = r; }))
+    if (!parse_bool_and_use(args[1], [&](bool r) { req.ignore_battery = r; }))
       return true;
   }
   if(arg_size >= 1)
   {
-    if (!parse_bool_and_use(args[1], [&](bool r) { req.do_background_mining = r; }))
+    if (!parse_bool_and_use(args[0], [&](bool r) { req.do_background_mining = r; }))
       return true;
   }
 
