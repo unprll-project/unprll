@@ -1,21 +1,21 @@
 // Copyright (c) 2014-2018, The Monero Project
-// 
+//
 // All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without modification, are
 // permitted provided that the following conditions are met:
-// 
+//
 // 1. Redistributions of source code must retain the above copyright notice, this list of
 //    conditions and the following disclaimer.
-// 
+//
 // 2. Redistributions in binary form must reproduce the above copyright notice, this list
 //    of conditions and the following disclaimer in the documentation and/or other
 //    materials provided with the distribution.
-// 
+//
 // 3. Neither the name of the copyright holder nor the names of its contributors may be
 //    used to endorse or promote products derived from this software without specific
 //    prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
 // EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
 // MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
@@ -25,7 +25,7 @@
 // INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
 // STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-// 
+//
 // Parts of this file are originally copyright (c) 2012-2013 The Cryptonote developers
 
 #include "chaingen.h"
@@ -102,7 +102,7 @@ bool gen_ring_signature_1::check_balances_1(cryptonote::core& c, size_t ev_index
   m_alice_account = boost::get<account_base>(events[4]);
 
   std::vector<block> blocks;
-  bool r = c.get_blocks(0, 100 + 2 * CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW, blocks);
+  bool r = c.get_blocks(0, 100 + 2 * CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1, blocks);
   CHECK_TEST_CONDITION(r);
 
   std::vector<cryptonote::block> chain;
@@ -120,7 +120,7 @@ bool gen_ring_signature_1::check_balances_2(cryptonote::core& c, size_t ev_index
   DEFINE_TESTS_ERROR_CONTEXT("gen_ring_signature_1::check_balances_2");
 
   std::vector<block> blocks;
-  bool r = c.get_blocks(0, 100 + 2 * CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW, blocks);
+  bool r = c.get_blocks(0, 100 + 2 * CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1, blocks);
   CHECK_TEST_CONDITION(r);
 
   std::vector<cryptonote::block> chain;
@@ -183,7 +183,7 @@ bool gen_ring_signature_2::check_balances_1(cryptonote::core& c, size_t ev_index
   m_alice_account = boost::get<account_base>(events[2]);
 
   std::vector<block> blocks;
-  bool r = c.get_blocks(0, 100 + 2 * CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW, blocks);
+  bool r = c.get_blocks(0, 100 + 2 * CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1, blocks);
   CHECK_TEST_CONDITION(r);
 
   std::vector<cryptonote::block> chain;
@@ -201,7 +201,7 @@ bool gen_ring_signature_2::check_balances_2(cryptonote::core& c, size_t ev_index
   DEFINE_TESTS_ERROR_CONTEXT("gen_ring_signature_2::check_balances_2");
 
   std::vector<block> blocks;
-  bool r = c.get_blocks(0, 100 + 2 * CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW, blocks);
+  bool r = c.get_blocks(0, 100 + 2 * CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1, blocks);
   CHECK_TEST_CONDITION(r);
 
   std::vector<cryptonote::block> chain;
@@ -237,7 +237,7 @@ bool gen_ring_signature_big::generate(std::vector<test_event_entry>& events) con
 {
   std::vector<account_base> accounts(m_test_size);
   std::vector<block> blocks;
-  blocks.reserve(m_test_size + CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW);
+  blocks.reserve(m_test_size + CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1);
 
   uint64_t ts_start = 1338224400;
   GENERATE_ACCOUNT(miner_account);
@@ -261,7 +261,7 @@ bool gen_ring_signature_big::generate(std::vector<test_event_entry>& events) con
 
   for (size_t i = 0; i < m_test_size; ++i)
   {
-    block blk_with_unlocked_out = blocks[blocks.size() - 1 - CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW];
+    block blk_with_unlocked_out = blocks[blocks.size() - 1 - CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1];
     MAKE_TX_LIST_START(events, txs_blk_i, miner_account, accounts[i], m_tx_amount, blk_with_unlocked_out);
     for (size_t j = 0; j <= i; ++j)
     {
@@ -293,7 +293,7 @@ bool gen_ring_signature_big::check_balances_1(cryptonote::core& c, size_t ev_ind
   m_alice_account = boost::get<account_base>(events[1 + m_test_size]);
 
   std::vector<block> blocks;
-  bool r = c.get_blocks(0, 2 * m_test_size + CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW, blocks);
+  bool r = c.get_blocks(0, 2 * m_test_size + CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1, blocks);
   CHECK_TEST_CONDITION(r);
 
   std::vector<cryptonote::block> chain;
@@ -318,7 +318,7 @@ bool gen_ring_signature_big::check_balances_2(cryptonote::core& c, size_t ev_ind
   DEFINE_TESTS_ERROR_CONTEXT("gen_ring_signature_big::check_balances_2");
 
   std::vector<block> blocks;
-  bool r = c.get_blocks(0, 2 * m_test_size + CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW, blocks);
+  bool r = c.get_blocks(0, 2 * m_test_size + CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1, blocks);
   CHECK_TEST_CONDITION(r);
 
   std::vector<cryptonote::block> chain;

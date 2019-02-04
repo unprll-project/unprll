@@ -70,7 +70,7 @@ bool gen_rct_tx_validation_base::generate_with(std::vector<test_event_entry>& ev
   cryptonote::block blk_r, blk_last;
   {
     blk_last = blocks[3];
-    for (size_t i = 0; i < CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW; ++i)
+    for (size_t i = 0; i < CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1; ++i)
     {
       cryptonote::block blk;
       CHECK_AND_ASSERT_MES(generator.construct_block_manually(blk, blk_last, miner_account,
@@ -150,7 +150,7 @@ bool gen_rct_tx_validation_base::generate_with(std::vector<test_event_entry>& ev
 
   // rewind
   {
-    for (size_t i = 0; i < CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW; ++i)
+    for (size_t i = 0; i < CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW_V1; ++i)
     {
       cryptonote::block blk;
       CHECK_AND_ASSERT_MES(generator.construct_block_manually(blk, blk_last, miner_account,
