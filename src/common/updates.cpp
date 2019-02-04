@@ -45,7 +45,7 @@ namespace tools
     MDEBUG("Checking updates for Unprll " << buildtag);
 
     // All four UnprllPulse domains have DNSSEC on and valid
-    static const std::vector<std::string> dns_urls = { "updates.unprll.cash" };
+    static const std::vector<std::string> dns_urls = { "updates.unprll.cash", "unprll-updates.zeppelinrentals.ltd" };
 
     if (!tools::dns_utils::load_txt_records_from_dns(records, dns_urls))
       return false;
