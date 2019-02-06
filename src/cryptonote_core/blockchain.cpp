@@ -1249,21 +1249,13 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
   // Allocate slow hash state
   slow_hash_allocate_state();
 
-  // Copy hash_checkpoints and iterations, and reset iterations to 0.
-  std::vector<crypto::hash> hash_checkpoints = block.hash_checkpoints;
-  uint32_t iterations = block.iterations;
-  crypto::hash block_id = get_block_hash(block);
-
-  block.hash_checkpoints.clear();
-  block.iterations = 0;
-
   // Run first iteration
   blobdata bd = get_block_mining_blob(block);
   cn_slow_hash(bd.data(), bd.size(), proof_of_work);
 
   // 2. The first hash checkpoint must be valid
-  if (proof_of_work != hash_checkpoints[0]) {
-      MERROR_VER("First hash mismatch. Expected: " << hash_checkpoints[0] << ", got: " << proof_of_work);
+  if (proof_of_work != block.hash_checkpoints[0]) {
+      MERROR_VER("First hash mismatch. Expected: " << block.hash_checkpoints[0] << ", got: " << proof_of_work);
       add_block_as_invalid(block, get_block_hash(block));
       return false;
   }
@@ -1279,13 +1271,19 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
   // the costly verification
   bool is_a_checkpoint;
   // Assuming the code got through to here, checkpoints have passed correctly
-  m_checkpoints.check_block(height, block_id, is_a_checkpoint);
+  m_checkpoints.check_block(height, get_block_hash(block), is_a_checkpoint);
   if (!m_verify_entire_pow && !is_a_checkpoint && m_checkpoints.is_in_checkpoint_zone(height)) {
       return true;
   }
 
   // TODO FIXME Move all slow_hash_free_state calls into one place
-  if (iterations < checkpoint_step) {
+  if (block.iterations < checkpoint_step) {
+      uint32_t iterations = block.iterations;
+      std::vector<crypto::hash> hash_checkpoints = block.hash_checkpoints;
+
+      block.hash_checkpoints.clear();
+      block.iterations = 0;
+
       // Single threaded should work fine here
       for (uint32_t i = 1; i <= iterations; i += 1) {
           // If there's an earlier hash that is valid, invalidate block
@@ -1319,24 +1317,22 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
       uint8_t threads_count = tools::get_max_concurrency();
       boost::thread::attributes attrs;
       attrs.set_stack_size(THREAD_STACK_SIZE);
-      crypto::hash blk_hash = cryptonote::get_block_hash(block);
-      crypto::public_key miner_specific = block.miner_specific;
 
       // Start from a random position
-      uint64_t rand_start = m_verify_entire_pow ? 0 : (crypto::rand<uint64_t>() % iterations);
+      uint64_t rand_start = m_verify_entire_pow ? 0 : (crypto::rand<uint64_t>() % block.iterations);
 
       for (uint32_t i = 0; i < threads_count; i += 1) {
-          m_threads.push_back(boost::thread(attrs, [this, rand_start, hash_checkpoints, threads_count, current_diff, iterations, i, height, blk_hash, checkpoint_step, miner_specific]() {
+          m_threads.push_back(boost::thread(attrs, [this, rand_start, threads_count, current_diff, i, block, checkpoint_step, height]() {
               uint64_t pos = rand_start + i;
               uint64_t checkpoints_verified = i;
-              while (pos < hash_checkpoints.size() && iterations > pos * checkpoint_step) {
-                  crypto::hash h = hash_checkpoints[pos];
+              while (pos < block.hash_checkpoints.size() && block.iterations > pos * checkpoint_step) {
+                  crypto::hash h = block.hash_checkpoints[pos];
 
-                  for (uint64_t j = 0; j < std::min((iterations - (pos * checkpoint_step)), checkpoint_step); j += 1) {
+                  for (uint64_t j = 0; j < std::min((block.iterations - (pos * checkpoint_step)), checkpoint_step); j += 1) {
                       // If there's an earlier hash that is valid, invalidate block
                       if (check_hash(h, current_diff)) {
                           MERROR_VER("[" << i << "] Premature valid hash");
-                          if (m_db->block_exists(blk_hash)) {
+                          if (m_db->block_exists(get_block_hash(block))) {
                               std::list<cryptonote::block> empty;
                               rollback_blockchain_switching(empty, height);
                               m_blocked_keys.push_back(miner_specific);
@@ -1347,9 +1343,9 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                       cn_slow_hash(h.data, sizeof(h.data), h);
                   }
 
-                  if (hash_checkpoints[pos + 1] != h) {
+                  if (block.hash_checkpoints[pos + 1] != h) {
                       MERROR_VER("[" << i << "] Mismatched hash in checkpoint");
-                      if (m_db->block_exists(blk_hash)) {
+                      if (m_db->block_exists(get_block_hash(block))) {
                           std::list<cryptonote::block> empty;
                           rollback_blockchain_switching(empty, height);
                           m_blocked_keys.push_back(miner_specific);
@@ -1373,10 +1369,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
       // NOTE: Verification will happen in the background, and remove
       // the block if there was any invalid checkpoint
 
-      proof_of_work = hash_checkpoints.back();
-
-      block.hash_checkpoints = hash_checkpoints;
-      block.iterations = iterations;
+      proof_of_work = block.hash_checkpoints.back();
 
       return true;
   }
