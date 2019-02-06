@@ -1166,7 +1166,7 @@ bool Blockchain::is_valid_checkpoint(cryptonote::block &blk, const uint64_t chec
     while (i < std::min((blk.iterations - (checkpoint * checkpoint_step)), checkpoint_step)) {
         if (check_hash(checkpoint_start, diff)) {
             slow_hash_free_state();
-            m_blocked_keys.push_back(blk.miner_specific);
+            add_block_as_invalid(blk, blk_hash);
             if (!m_verify_entire_pow) {
               rollback_blockchain_switching(empty, height);
             }
@@ -1182,7 +1182,7 @@ bool Blockchain::is_valid_checkpoint(cryptonote::block &blk, const uint64_t chec
     if (checkpoint_start != blk.hash_checkpoints[checkpoint + 1]) {
         // Checkpoint doesn't match
         slow_hash_free_state();
-        m_blocked_keys.push_back(blk.miner_specific);
+        add_block_as_invalid(blk, blk_hash);
         if (!m_verify_entire_pow) {
           rollback_blockchain_switching(empty, height);
         }
@@ -1221,17 +1221,28 @@ bool Blockchain::check_miner_specific(const cryptonote::block& block)
 //------------------------------------------------------------------
 bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proof_of_work, difficulty_type current_diff, uint64_t height)
 {
+  if (m_invalid_blocks.find(get_block_hash(block)) != m_invalid_blocks.end()) {
+    // Existing invalid block
+    return false;
+  } else if (m_invalid_blocks.find(block.prev_id) != m_invalid_blocks.end()) {
+    // Invalid parent block
+    add_block_as_invalid(block, get_block_hash(block));
+    return false;
+  }
+
   uint64_t const checkpoint_step = (block.major_version >= HF_VERSION_BLOCK_TIME_REDUCTION) ? config::HASH_CHECKPOINT_STEP_V2 : config::HASH_CHECKPOINT_STEP_V1;
 
   // 1. # of checkpoints (minus the first and last) must match iterations
   if ((block.iterations / checkpoint_step) != (block.hash_checkpoints.size() - 2)) {
     MERROR_VER("Iteration mismatch");
+    add_block_as_invalid(block, get_block_hash(block));
     return false;
   }
 
   // 2. The last hash must be valid
   if (!check_hash(block.hash_checkpoints.back(), current_diff)) {
       MERROR_VER("Last hash mismatch");
+      add_block_as_invalid(block, get_block_hash(block));
       return false;
   }
 
@@ -1253,6 +1264,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
   // 2. The first hash checkpoint must be valid
   if (proof_of_work != hash_checkpoints[0]) {
       MERROR_VER("First hash mismatch. Expected: " << hash_checkpoints[0] << ", got: " << proof_of_work);
+      add_block_as_invalid(block, get_block_hash(block));
       return false;
   }
 
@@ -1279,14 +1291,14 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
           // If there's an earlier hash that is valid, invalidate block
           if (check_hash(proof_of_work, current_diff)) {
               slow_hash_free_state();
-              m_blocked_keys.push_back(block.miner_specific);
+              add_block_as_invalid(block, get_block_hash(block));
               return false;
           }
 
           // If the current iteration is listed in checkpoints, check if the hash matches
           if (i % checkpoint_step == 0 && hash_checkpoints[(i / checkpoint_step)] != proof_of_work) {
               slow_hash_free_state();
-              m_blocked_keys.push_back(block.miner_specific);
+              add_block_as_invalid(block, get_block_hash(block));
               return false;
           }
 
@@ -2345,6 +2357,7 @@ bool Blockchain::add_block_as_invalid(const block_extended_info& bei, const cryp
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   auto i_res = m_invalid_blocks.insert(std::map<crypto::hash, block_extended_info>::value_type(h, bei));
   CHECK_AND_ASSERT_MES(i_res.second, false, "at insertion invalid by tx returned status existed");
+  m_blocked_keys.push_back(bei.bl.miner_specific);
   MINFO("BLOCK ADDED AS INVALID: " << h << std::endl << ", prev_id=" << bei.bl.prev_id << ", m_invalid_blocks count=" << m_invalid_blocks.size());
   return true;
 }
