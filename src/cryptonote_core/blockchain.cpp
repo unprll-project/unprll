@@ -1333,11 +1333,18 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                       if (check_hash(h, current_diff)) {
                           MERROR_VER("[" << i << "] Premature valid hash");
                           if (m_db->block_exists(get_block_hash(block))) {
+                              // It's in the main chain
+                              MERROR_VER("[" << i << "] Main chain block");
                               std::list<cryptonote::block> empty;
                               rollback_blockchain_switching(empty, height);
-                              m_blocked_keys.push_back(miner_specific);
-                              notify_invalid_block(blk_hash, pos);
+                          } else if (m_alternative_chains.find(get_block_hash(block)) != m_alternative_chains.end()) {
+                              CRITICAL_REGION_LOCAL(m_blockchain_lock);
+                              MERROR_VER("[" << i << "] Alt chain block");
+                              // It's part of an alt chain
+                              m_alternative_chains.erase(get_block_hash(block));
                           }
+                          add_block_as_invalid(block, get_block_hash(block));
+                          notify_invalid_block(get_block_hash(block), pos);
                           return;
                       }
                       cn_slow_hash(h.data, sizeof(h.data), h);
@@ -1346,11 +1353,18 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                   if (block.hash_checkpoints[pos + 1] != h) {
                       MERROR_VER("[" << i << "] Mismatched hash in checkpoint");
                       if (m_db->block_exists(get_block_hash(block))) {
+                          // It's in the main chain
+                          MERROR_VER("[" << i << "] Main chain block");
                           std::list<cryptonote::block> empty;
                           rollback_blockchain_switching(empty, height);
-                          m_blocked_keys.push_back(miner_specific);
-                          notify_invalid_block(blk_hash, pos);
+                      } else if (m_alternative_chains.find(get_block_hash(block)) != m_alternative_chains.end()) {
+                          CRITICAL_REGION_LOCAL(m_blockchain_lock);
+                          // It's part of an alt chain
+                          MERROR_VER("[" << i << "] Alt chain block");
+                          m_alternative_chains.erase(get_block_hash(block));
                       }
+                      add_block_as_invalid(block, get_block_hash(block));
+                      notify_invalid_block(get_block_hash(block), pos);
                       return;
                   }
 
