@@ -1167,7 +1167,7 @@ bool Blockchain::is_valid_checkpoint(cryptonote::block &blk, const uint64_t chec
         if (check_hash(checkpoint_start, diff)) {
             slow_hash_free_state();
             m_blocked_keys.push_back(blk.miner_specific);
-            if (m_verify_entire_pow) {
+            if (!m_verify_entire_pow) {
               rollback_blockchain_switching(empty, height);
             }
             return false;
@@ -1183,7 +1183,7 @@ bool Blockchain::is_valid_checkpoint(cryptonote::block &blk, const uint64_t chec
         // Checkpoint doesn't match
         slow_hash_free_state();
         m_blocked_keys.push_back(blk.miner_specific);
-        if (m_verify_entire_pow) {
+        if (!m_verify_entire_pow) {
           rollback_blockchain_switching(empty, height);
         }
         return false;
@@ -1268,7 +1268,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
   bool is_a_checkpoint;
   // Assuming the code got through to here, checkpoints have passed correctly
   m_checkpoints.check_block(height, block_id, is_a_checkpoint);
-  if (!is_a_checkpoint && m_checkpoints.is_in_checkpoint_zone(height)) {
+  if (!m_verify_entire_pow && !is_a_checkpoint && m_checkpoints.is_in_checkpoint_zone(height)) {
       return true;
   }
 
