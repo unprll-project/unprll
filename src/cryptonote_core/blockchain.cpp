@@ -1345,6 +1345,9 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                           }
                           add_block_as_invalid(block, get_block_hash(block));
                           notify_invalid_block(get_block_hash(block), pos);
+                          for (auto& t : m_threads) {
+                            t.interrupt();
+                          }
                           return;
                       }
                       cn_slow_hash(h.data, sizeof(h.data), h);
@@ -1365,6 +1368,9 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                       }
                       add_block_as_invalid(block, get_block_hash(block));
                       notify_invalid_block(get_block_hash(block), pos);
+                      for (auto& t : m_threads) {
+                        t.interrupt();
+                      }
                       return;
                   }
 
@@ -1372,7 +1378,7 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                   checkpoints_verified += threads_count;
 
                   // Probabilistic verification
-                  if (h == hash_checkpoints.back() || (!m_verify_entire_pow && double(checkpoints_verified) / hash_checkpoints.size() > config::BLOCK_VALID_THRESHOLD)) {
+                  if (h == block.hash_checkpoints.back() || (!m_verify_entire_pow && double(checkpoints_verified) / block.hash_checkpoints.size() > config::BLOCK_VALID_THRESHOLD) || boost::this_thread::interruption_requested()) {
                       break;
                   }
               }
