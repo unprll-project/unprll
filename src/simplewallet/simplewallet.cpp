@@ -440,7 +440,7 @@ namespace
       {
         writer << "\n" << sw::tr("output amount") << " = " << print_money(outs_for_amount.first) << ", " << sw::tr("found outputs to use") << " = " << outs_for_amount.second;
       }
-      writer << sw::tr("Please use sweep_unmixable.");
+      writer << sw::tr("Please try again.");
     }
     catch (const tools::error::tx_not_constructed&)
     {
