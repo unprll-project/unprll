@@ -97,10 +97,10 @@ release-static-linux-armv7: toolchain-linux-armv7
 	mkdir -p build/Linux-ARMv7/$(subbuilddir)/release
 	cd build/Linux-ARMv7/$(subbuilddir)/release && cmake -D BUILD_TESTS=OFF -D ARCH="armv7-a" -D STATIC=ON -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-armv7" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/armv7-linux-gnueabihf/share/toolchain.cmake $(topdir) && $(MAKE)
 
-release-static-android: toolchain-linux-android
+release-static-android:
 	mkdir -p build/Android/$(subbuilddir)/release/translations
-	cd build/Android/$(subbuilddir)/release/translations && cmake ../../../translations && $(MAKE)
-	cd build/Android/$(subbuilddir)/release && CC=arm-linux-androideabi-clang CXX=arm-linux-androideabi-clang++ cmake -D BUILD_TESTS=OFF -D ARCH="armv7-a" -D STATIC=ON -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=release -D ANDROID=true -D INSTALL_VENDORED_LIBUNBOUND=ON -D BUILD_TAG="android" -D CMAKE_SYSTEM_NAME="Android" -D CMAKE_ANDROID_STANDALONE_TOOLCHAIN="${ANDROID_STANDALONE_TOOLCHAIN_PATH}" -D CMAKE_ANDROID_ARM_MODE=ON -D CMAKE_ANDROID_ARCH_ABI="armeabi-v7a" ../.. && $(MAKE)
+	cd build/Android/$(subbuilddir)/release/translations && cmake $(topdir)/../translations && $(MAKE)
+	cd build/Android/$(subbuilddir)/release && CC=arm-linux-androideabi-clang CXX=arm-linux-androideabi-clang++ cmake -D BUILD_TESTS=OFF -D ARCH="armv7-a" -D STATIC=ON -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=release -D ANDROID=true -D INSTALL_VENDORED_LIBUNBOUND=ON -D BUILD_TAG="android" -D CMAKE_SYSTEM_NAME="Android" -D CMAKE_ANDROID_STANDALONE_TOOLCHAIN="${ANDROID_STANDALONE_TOOLCHAIN_PATH}" -D CMAKE_ANDROID_ARM_MODE=ON -D CMAKE_ANDROID_ARCH_ABI="armeabi-v7a" $(topdir) && $(MAKE)
 
 release-static-linux-armv8: toolchain-linux-armv8
 	mkdir -p build/Linux-ARMv8/$(subbuilddir)/release
