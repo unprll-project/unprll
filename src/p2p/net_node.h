@@ -106,6 +106,7 @@ namespace nodetool
     void serialize(Archive &a,  const t_version_type ver)
     {
       a & m_peerlist;
+      a & m_blocked_hosts;
       if (ver == 0)
       {
         // from v1, we do not store the peer id anymore
