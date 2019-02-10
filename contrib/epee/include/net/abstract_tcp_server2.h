@@ -303,7 +303,16 @@ namespace net_utils
     bool is_thread_worker();
 
     /// The io_service used to perform asynchronous operations.
-    std::unique_ptr<boost::asio::io_service> m_io_service_local_instance;
+    struct worker
+    {
+      worker()
+        : io_service(), work(io_service)
+      {}
+
+      boost::asio::io_service io_service;
+      boost::asio::io_service::work work;
+    };
+    std::unique_ptr<worker> m_io_service_local_instance;
     boost::asio::io_service& io_service_;    
 
     /// Acceptor used to listen for incoming connections.

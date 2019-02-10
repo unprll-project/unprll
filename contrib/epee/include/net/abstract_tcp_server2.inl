@@ -786,8 +786,8 @@ PRAGMA_WARNING_DISABLE_VS(4355)
 
   template<class t_protocol_handler>
   boosted_tcp_server<t_protocol_handler>::boosted_tcp_server( t_connection_type connection_type ) :
-    m_io_service_local_instance(new boost::asio::io_service()),
-    io_service_(*m_io_service_local_instance.get()),
+    m_io_service_local_instance(new worker()),
+    io_service_(m_io_service_local_instance->io_service),
     acceptor_(io_service_),
     m_stop_signal_sent(false), m_port(0),
 	m_sock_count(0), m_sock_number(0), m_threads_count(0),
@@ -894,6 +894,7 @@ POP_WARNINGS
       try
       {
         io_service_.run();
+        return true;
       }
       catch(const std::exception& ex)
       {
