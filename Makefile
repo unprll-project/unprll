@@ -34,68 +34,68 @@ topdir   := ../../../..
 all: release-all
 
 cmake-debug:
-	mkdir -p build/Host/$(subbuilddir)/debug
-	cd build/Host/$(subbuilddir)/debug && cmake -D CMAKE_BUILD_TYPE=Debug $(topdir)
+	mkdir -p build/host/$(subbuilddir)/debug
+	cd build/host/$(subbuilddir)/debug && cmake -D CMAKE_BUILD_TYPE=Debug $(topdir)
 
 debug: cmake-debug
-	cd build/Host/$(subbuilddir)/debug && $(MAKE)
+	cd build/host/$(subbuilddir)/debug && $(MAKE)
 
 # Temporarily disable some tests:
 #  * libwallet_api_tests fail (Issue #895)
 debug-test:
-	mkdir -p build/Host/$(subbuilddir)/debug
-	cd build/Host/$(subbuilddir)/debug && cmake -D BUILD_TESTS=ON -D CMAKE_BUILD_TYPE=Debug $(topdir) &&  $(MAKE) && $(MAKE) ARGS="-E libwallet_api_tests" test
+	mkdir -p build/host/$(subbuilddir)/debug
+	cd build/host/$(subbuilddir)/debug && cmake -D BUILD_TESTS=ON -D CMAKE_BUILD_TYPE=Debug $(topdir) &&  $(MAKE) && $(MAKE) ARGS="-E libwallet_api_tests" test
 
 debug-all:
-	mkdir -p build/Host/$(subbuilddir)/debug
-	cd build/Host/$(subbuilddir)/debug && cmake -D BUILD_TESTS=ON -D BUILD_SHARED_LIBS=OFF -D CMAKE_BUILD_TYPE=Debug $(topdir) && $(MAKE)
+	mkdir -p build/host/$(subbuilddir)/debug
+	cd build/host/$(subbuilddir)/debug && cmake -D BUILD_TESTS=ON -D BUILD_SHARED_LIBS=OFF -D CMAKE_BUILD_TYPE=Debug $(topdir) && $(MAKE)
 
 debug-static-all:
-	mkdir -p build/Host/$(subbuilddir)/debug
-	cd build/Host/$(subbuilddir)/debug && cmake -D BUILD_TESTS=ON -D STATIC=ON -D CMAKE_BUILD_TYPE=Debug $(topdir) && $(MAKE)
+	mkdir -p build/host/$(subbuilddir)/debug
+	cd build/host/$(subbuilddir)/debug && cmake -D BUILD_TESTS=ON -D STATIC=ON -D CMAKE_BUILD_TYPE=Debug $(topdir) && $(MAKE)
 
 debug-static-win64: toolchain-windows-x86_64
-	mkdir -p build/Windows-x86_64/$(subbuilddir)/debug
-	cd build/Windows/$(subbuilddir)/debug && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=Debug -D BUILD_TAG="windows-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
+	mkdir -p build/windows-x86_64/$(subbuilddir)/debug
+	cd build/windows/$(subbuilddir)/debug && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=Debug -D BUILD_TAG="windows-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
 
 debug-static-win32: toolchain-windows-x86
 	cd contrib/depends && $(MAKE) HOST=i686-w64-mingw32
 	cd $(topdir)
-	mkdir -p build/Windows-x86/$(subbuilddir)/debug
-	cd build/Windows/$(subbuilddir)/debug && cmake -D STATIC=ON -D ARCH="i686" -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=Debug -D BUILD_TAG="windows-x86" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/i686-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
+	mkdir -p build/windows-x86/$(subbuilddir)/debug
+	cd build/windows/$(subbuilddir)/debug && cmake -D STATIC=ON -D ARCH="i686" -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=Debug -D BUILD_TAG="windows-x86" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/i686-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
 
 cmake-release:
-	mkdir -p build/Host/$(subbuilddir)/release
-	cd build/Host/$(subbuilddir)/release && cmake -D CMAKE_BUILD_TYPE=Release $(topdir)
+	mkdir -p build/host/$(subbuilddir)/release
+	cd build/host/$(subbuilddir)/release && cmake -D CMAKE_BUILD_TYPE=Release $(topdir)
 
 release: cmake-release
-	cd build/Host/$(subbuilddir)/release && $(MAKE)
+	cd build/host/$(subbuilddir)/release && $(MAKE)
 
 release-test:
-	mkdir -p build/Host/$(subbuilddir)/release
-	cd build/Host/$(subbuilddir)/release && cmake -D BUILD_TESTS=ON -D CMAKE_BUILD_TYPE=release $(topdir) && $(MAKE) && $(MAKE) test
+	mkdir -p build/host/$(subbuilddir)/release
+	cd build/host/$(subbuilddir)/release && cmake -D BUILD_TESTS=ON -D CMAKE_BUILD_TYPE=release $(topdir) && $(MAKE) && $(MAKE) test
 
 release-all:
-	mkdir -p build/Host/$(subbuilddir)/release
-	cd build/Host/$(subbuilddir)/release && cmake -D BUILD_TESTS=ON -D CMAKE_BUILD_TYPE=release $(topdir) && $(MAKE)
+	mkdir -p build/host/$(subbuilddir)/release
+	cd build/host/$(subbuilddir)/release && cmake -D BUILD_TESTS=ON -D CMAKE_BUILD_TYPE=release $(topdir) && $(MAKE)
 
 release-static:
-	mkdir -p build/Host/$(subbuilddir)/release
-	cd build/Host/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release $(topdir) && $(MAKE)
+	mkdir -p build/host/$(subbuilddir)/release
+	cd build/host/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release $(topdir) && $(MAKE)
 
 coverage:
-	mkdir -p build/Host/$(subbuilddir)/debug
-	cd build/Host/$(subbuilddir)/debug && cmake -D BUILD_TESTS=ON -D CMAKE_BUILD_TYPE=Debug -D COVERAGE=ON $(topdir) && $(MAKE) && $(MAKE) test
+	mkdir -p build/host/$(subbuilddir)/debug
+	cd build/host/$(subbuilddir)/debug && cmake -D BUILD_TESTS=ON -D CMAKE_BUILD_TYPE=Debug -D COVERAGE=ON $(topdir) && $(MAKE) && $(MAKE) test
 
 # Targets for specific prebuilt builds which will be advertised for updates by their build tag
 
 release-static-linux-armv6: toolchain-linux-armv6
-	mkdir -p build/Linux-ARMv6/$(subbuilddir)/release
-	cd build/Linux-ARMv6/$(subbuilddir)/release && cmake -D BUILD_TESTS=OFF -D ARCH="armv6zk" -D STATIC=ON -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-armv6" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/armv6l-linux-gnueabihf/share/toolchain.cmake $(topdir) && $(MAKE)
+	mkdir -p build/linux-armv6/$(subbuilddir)/release
+	cd build/linux-armv6/$(subbuilddir)/release && cmake -D BUILD_TESTS=OFF -D ARCH="armv6zk" -D STATIC=ON -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-armv6" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/armv6l-linux-gnueabihf/share/toolchain.cmake $(topdir) && $(MAKE)
 
 release-static-linux-armv7: toolchain-linux-armv7
-	mkdir -p build/Linux-ARMv7/$(subbuilddir)/release
-	cd build/Linux-ARMv7/$(subbuilddir)/release && cmake -D BUILD_TESTS=OFF -D ARCH="armv7-a" -D STATIC=ON -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-armv7" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/armv7-linux-gnueabihf/share/toolchain.cmake $(topdir) && $(MAKE)
+	mkdir -p build/linux-armv7/$(subbuilddir)/release
+	cd build/linux-armv7/$(subbuilddir)/release && cmake -D BUILD_TESTS=OFF -D ARCH="armv7-a" -D STATIC=ON -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-armv7" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/armv7-linux-gnueabihf/share/toolchain.cmake $(topdir) && $(MAKE)
 
 release-static-android:
 	mkdir -p build/Android/$(subbuilddir)/release/translations
@@ -103,40 +103,40 @@ release-static-android:
 	cd build/Android/$(subbuilddir)/release && CC=arm-linux-androideabi-clang CXX=arm-linux-androideabi-clang++ cmake -D BUILD_TESTS=OFF -D ARCH="armv7-a" -D STATIC=ON -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=release -D ANDROID=true -D INSTALL_VENDORED_LIBUNBOUND=ON -D BUILD_TAG="android" -D CMAKE_SYSTEM_NAME="Android" -D CMAKE_ANDROID_STANDALONE_TOOLCHAIN="${ANDROID_STANDALONE_TOOLCHAIN_PATH}" -D CMAKE_ANDROID_ARM_MODE=ON -D CMAKE_ANDROID_ARCH_ABI="armeabi-v7a" $(topdir) && $(MAKE)
 
 release-static-linux-armv8: toolchain-linux-armv8
-	mkdir -p build/Linux-ARMv8/$(subbuilddir)/release
-	cd build/Linux-ARMv8/$(subbuilddir)/release && cmake -D BUILD_TESTS=OFF -D ARCH="armv8-a" -D STATIC=ON -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-armv8" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/aarch64-linux-gnu/share/toolchain.cmake -D THREADS_PTHREAD_ARG="-lpthread" $(topdir) && $(MAKE)
+	mkdir -p build/linux-armv8/$(subbuilddir)/release
+	cd build/linux-armv8/$(subbuilddir)/release && cmake -D BUILD_TESTS=OFF -D ARCH="armv8-a" -D STATIC=ON -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-armv8" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/aarch64-linux-gnu/share/toolchain.cmake -D THREADS_PTHREAD_ARG="-lpthread" $(topdir) && $(MAKE)
 
 release-static-linux-x86_64: toolchain-linux-x86_64
-	mkdir -p build/Linux-x86_64/$(subbuilddir)/release
-	cd build/Linux-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-linux-gnu/share/toolchain.cmake -D THREADS_PTHREAD_ARG="-lpthread" $(topdir) && $(MAKE)
+	mkdir -p build/linux-x86_64/$(subbuilddir)/release
+	cd build/linux-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-linux-gnu/share/toolchain.cmake -D THREADS_PTHREAD_ARG="-lpthread" $(topdir) && $(MAKE)
 
 release-static-freebsd-x86_64:
-	$(error FreeBSD cross-compilation is not supported at the moment)
+	$(error freebsd cross-compilation is not supported at the moment)
 	cd contrib/depends && $(MAKE) HOST=x86_64-freebsd
 	cd $(topdir)
-	mkdir -p build/FreeBSD-x86_64/$(subbuilddir)/release
-	cd build/FreeBSD-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="freebsd-x86_64" $(topdir) && $(MAKE)
+	mkdir -p build/freebsd-x86_64/$(subbuilddir)/release
+	cd build/freebsd-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="freebsd-x86_64" $(topdir) && $(MAKE)
 
 release-static-darwin-x86_64: toolchain-darwin-x86_64
 	mkdir -p build/Darwin-x86_64/$(subbuilddir)/release
 	cd build/Darwin-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="darwin-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-apple-darwin11/share/toolchain.cmake $(topdir) && $(MAKE)
 
 release-static-linux-i686: toolchain-linux-x86
-	mkdir -p build/Linux-x86/$(subbuilddir)/release
-	cd build/Linux-x86/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="i686" -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/i686-linux-gnu/share/toolchain.cmake $(topdir) && $(MAKE)
+	mkdir -p build/linux-x86/$(subbuilddir)/release
+	cd build/linux-x86/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="i686" -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=release -D BUILD_TAG="linux-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/i686-linux-gnu/share/toolchain.cmake $(topdir) && $(MAKE)
 
 release-static-win64: toolchain-windows-x86_64
 	cd $(topdir)
-	mkdir -p build/Windows-x86_64/$(subbuilddir)/release
-	cd build/Windows-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=Release -D BUILD_TAG="windows-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
+	mkdir -p build/windows-x86_64/$(subbuilddir)/release
+	cd build/windows-x86_64/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="x86-64" -D BUILD_64=ON -D CMAKE_BUILD_TYPE=Release -D BUILD_TAG="windows-x86_64" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/x86_64-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
 
 release-static-win32: toolchain-windows-x86
-	mkdir -p build/Windows-x86/$(subbuilddir)/release
-	cd build/Windows-x86/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="i686" -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=Release -D BUILD_TAG="windows-x86" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/i686-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
+	mkdir -p build/windows-x86/$(subbuilddir)/release
+	cd build/windows-x86/$(subbuilddir)/release && cmake -D STATIC=ON -D ARCH="i686" -D BUILD_64=OFF -D CMAKE_BUILD_TYPE=Release -D BUILD_TAG="windows-x86" -D CMAKE_TOOLCHAIN_FILE=$(topdir)/contrib/depends/i686-w64-mingw32/share/toolchain.cmake $(topdir) && $(MAKE)
 
 fuzz:
-	mkdir -p build/Host/$(subbuilddir)/fuzz
-	cd build/Host/$(subbuilddir)/fuzz && cmake -D STATIC=ON -D SANITIZE=ON -D BUILD_TESTS=ON -D USE_LTO=OFF -D CMAKE_C_COMPILER=afl-gcc -D CMAKE_CXX_COMPILER=afl-g++ -D ARCH="x86-64" -D CMAKE_BUILD_TYPE=fuzz -D BUILD_TAG="linux-x86_64" $(topdir) && $(MAKE)
+	mkdir -p build/host/$(subbuilddir)/fuzz
+	cd build/host/$(subbuilddir)/fuzz && cmake -D STATIC=ON -D SANITIZE=ON -D BUILD_TESTS=ON -D USE_LTO=OFF -D CMAKE_C_COMPILER=afl-gcc -D CMAKE_CXX_COMPILER=afl-g++ -D ARCH="x86-64" -D CMAKE_BUILD_TYPE=fuzz -D BUILD_TAG="linux-x86_64" $(topdir) && $(MAKE)
 
 clean:
 	@echo "WARNING: Back-up your wallet if it exists within ./build!" ; \
