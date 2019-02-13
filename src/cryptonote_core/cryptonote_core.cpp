@@ -596,7 +596,7 @@ namespace cryptonote
     }
     catch (const std::exception &e)
     {
-      MERROR("Failed to parse block notify spec");
+      MERROR("Failed to parse block notify spec: " << e.what());
     }
 
     const std::pair<uint8_t, uint64_t> regtest_hard_forks[3] = {std::make_pair(1, 0), std::make_pair(Blockchain::get_hard_fork_heights(MAINNET).back().version, 1), std::make_pair(0, 0)};
