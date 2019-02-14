@@ -150,7 +150,7 @@ jobs:
                 -u ${CIRCLE_PROJECT_USERNAME}
                 -r ${CIRCLE_PROJECT_REPONAME}
                 -c ${CIRCLE_SHA1}
-                -b "$(sha256sum *)"
+                -b "$(cd /tmp/artifacts && sha256sum *)"
                 $(ls /tmp/artifacts | head -n1 | awk '{split($0,a,"-"); print a[2]}') /tmp/artifacts/
 
 workflows:
