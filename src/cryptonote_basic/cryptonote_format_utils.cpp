@@ -940,20 +940,10 @@ namespace cryptonote
     return get_transaction_hash(t, res, &blob_size);
   }
   //---------------------------------------------------------------
-  blobdata get_block_hashing_blob(const block& _b)
+  blobdata get_block_hashing_blob(const block& b)
   {
-    block b = _b;
-    crypto::hash tree_root_hash;
-    // Get the tree hash of intermediate hash checkpoints to allow pruning later
-    if (b.major_version >= HF_VERSION_BLOCK_TIME_REDUCTION && b.hash_checkpoints.size() > 2) {
-      tree_hash(b.hash_checkpoints.data() + 1, b.hash_checkpoints.size() - 2, tree_root_hash);
-      b.hash_checkpoints.clear();
-      b.hash_checkpoints.push_back(*(_b.hash_checkpoints.begin()));
-      b.hash_checkpoints.push_back(tree_root_hash);
-      b.hash_checkpoints.push_back(*(_b.hash_checkpoints.end()));
-    }
     blobdata blob = t_serializable_object_to_blob(static_cast<block_header>(b));
-    tree_root_hash = get_tx_tree_hash(b);
+    crypto::hash tree_root_hash = get_tx_tree_hash(b);
     blob.append(reinterpret_cast<const char*>(&tree_root_hash), sizeof(tree_root_hash));
     blob.append(tools::get_varint_data(b.tx_hashes.size()+1));
     return blob;
