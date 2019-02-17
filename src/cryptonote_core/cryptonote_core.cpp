@@ -182,7 +182,7 @@ namespace cryptonote
     "disable-networked-verifier"
   , "Verify block PoW completely without relying on INVALID_BLOCK broadcasts"
   };
-  static const command_line::arg_descriptor<uint8_t> arg_set_p2p_rate_limit = {
+  static const command_line::arg_descriptor<uint16_t> arg_set_p2p_rate_limit = {
     "set-p2p-rate-limit"
   , "Set maximum number of requests per minute allowed from other nodes"
   , config::MAXIMUM_REQUESTS_PER_MINUTE
