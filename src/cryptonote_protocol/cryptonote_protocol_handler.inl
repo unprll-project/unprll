@@ -1494,6 +1494,7 @@ skip:
     return true;
   }
   //------------------------------------------------------------------------------------------------------------------------
+  template<class t_core>
   bool t_cryptonote_protocol_handler<t_core>::check_standby_peers()
   {
     m_p2p->for_each_connection([&](cryptonote_connection_context& context, nodetool::peerid_type peer_id, uint32_t support_flags)->bool
@@ -1506,6 +1507,8 @@ skip:
       }
       return true;
     });
+    return true;
+  }
   //------------------------------------------------------------------------------------------------------------------------
   template<class t_core>
   int t_cryptonote_protocol_handler<t_core>::handle_request_chain(int command, NOTIFY_REQUEST_CHAIN::request& arg, cryptonote_connection_context& context)
@@ -2005,7 +2008,7 @@ skip:
             std::string arg_buff;
             epee::serialization::store_t_to_binary(arg, arg_buff);
 
-            return m_p2p->relay_notify_to_list(NOTIFY_NEW_TRANSACTIONS::ID, arg_buff, std::list<boost::uuids::uuid>({ m_dandelion_peer }));
+            return m_p2p->relay_notify_to_list(NOTIFY_NEW_TRANSACTIONS::ID, epee::strspan<uint8_t>(arg_buff), std::list<boost::uuids::uuid>({ m_dandelion_peer }));
         } else {
             // Switch to fluff broadcast
             arg.dandelion = false;
