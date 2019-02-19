@@ -55,7 +55,6 @@ int main(int argc, char* argv[])
   uint32_t log_level = 0;
   uint64_t block_stop = 0;
   bool blocks_dat = false;
-  bool pruned = false;
 
   tools::on_startup();
 
@@ -70,7 +69,6 @@ int main(int argc, char* argv[])
     "database", available_dbs.c_str(), default_db_type
   };
   const command_line::arg_descriptor<bool> arg_blocks_dat = {"blocksdat", "Output in blocks.dat format", blocks_dat};
-  const command_line::arg_descriptor<bool> arg_pruned = {"pruned", "Output a pruned export [WARNING: Not currently supported]", pruned};
 
 
   command_line::add_arg(desc_cmd_sett, cryptonote::arg_data_dir);
@@ -81,7 +79,6 @@ int main(int argc, char* argv[])
   command_line::add_arg(desc_cmd_sett, arg_database);
   command_line::add_arg(desc_cmd_sett, arg_block_stop);
   command_line::add_arg(desc_cmd_sett, arg_blocks_dat);
-  command_line::add_arg(desc_cmd_sett, arg_pruned);
 
   command_line::add_arg(desc_cmd_only, command_line::arg_help);
 
@@ -192,11 +189,7 @@ int main(int argc, char* argv[])
   else
   {
     BootstrapFile bootstrap;
-    bool opt_pruned = command_line::get_arg(vm, arg_pruned);
-    if (opt_pruned) {
-      std::cout << "WARNING: Pruning is experimental. Proceed with caution" << ENDL;
-    }
-    r = bootstrap.store_blockchain_raw(core_storage, NULL, output_file_path, opt_pruned, block_stop);
+    r = bootstrap.store_blockchain_raw(core_storage, NULL, output_file_path, block_stop);
   }
   CHECK_AND_ASSERT_MES(r, 1, "Failed to export blockchain raw data");
   LOG_PRINT_L0("Blockchain raw data exported OK");

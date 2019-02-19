@@ -63,7 +63,7 @@ public:
   uint64_t seek_to_first_chunk(std::ifstream& import_file);
 
   bool store_blockchain_raw(cryptonote::Blockchain* cs, cryptonote::tx_memory_pool* txp,
-      boost::filesystem::path& output_file, bool pruned, uint64_t use_block_height=0);
+      boost::filesystem::path& output_file, uint64_t use_block_height=0);
 
 protected:
 
@@ -79,7 +79,7 @@ protected:
   bool open_writer(const boost::filesystem::path& file_path);
   bool initialize_file();
   bool close();
-  void write_block(block& block, bool pruned);
+  void write_block(block& block);
   void flush_chunk();
 
 private:
