@@ -624,6 +624,7 @@ namespace cryptonote
     bool check_miner_specific(const cryptonote::block& block);
     bool check_proof_of_work(cryptonote::block block, crypto::hash& proof_of_work, difficulty_type current_diff, uint64_t height);
     void notify_invalid_block(const crypto::hash& h, uint64_t checkpoint) const;
+    std::vector<time_t> get_last_block_timestamps(unsigned int blocks) const;
 
     /**
      * @brief gets the block weight median based on recent blocks (same window as for the limit)

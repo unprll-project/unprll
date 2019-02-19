@@ -887,6 +887,17 @@ difficulty_type Blockchain::get_difficulty_for_next_block()
   return diff;
 }
 //------------------------------------------------------------------
+std::vector<time_t> Blockchain::get_last_block_timestamps(unsigned int blocks) const
+{
+  uint64_t height = m_db->height();
+  if (blocks > height)
+    blocks = height;
+  std::vector<time_t> timestamps(blocks);
+  while (blocks--)
+    timestamps[blocks] = m_db->get_block_timestamp(height - blocks - 1);
+  return timestamps;
+}
+//------------------------------------------------------------------
 // This function removes blocks from the blockchain until it gets to the
 // position where the blockchain switch started and then re-adds the blocks
 // that had been removed.

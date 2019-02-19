@@ -656,6 +656,8 @@ namespace cryptonote
       */
      void safesyncmode(const bool onoff);
 
+     bool check_block_rate();
+
      /**
       * @brief sets the target blockchain height
       *
@@ -1015,6 +1017,7 @@ namespace cryptonote
      epee::math_helper::once_a_time_seconds<60*10, true> m_broadcast_clearer; //!< interval for clearing broadcast messages
      epee::math_helper::once_a_time_seconds<30> m_clear_dandelion_embargo_interval; //!< interval for clearing Dandelion embargo
      epee::math_helper::once_a_time_seconds<24 * 60 * 60> m_blocked_keys_clearer; //!< interval for clearing banned miner_specifics
+     epee::math_helper::once_a_time_seconds<90, false> m_block_rate_interval; //!< interval for checking block rate
 
      std::vector<std::string> m_messages; //!< stores broadcast messages
 

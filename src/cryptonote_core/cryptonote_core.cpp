@@ -1603,6 +1603,7 @@ namespace cryptonote
     m_broadcast_clearer.do_call(boost::bind(&core::clear_broadcast_messages, this));
     m_clear_dandelion_embargo_interval.do_call(boost::bind(&core::clear_dandelion_embargo, this));
     m_blocked_keys_clearer.do_call(boost::bind(&core::clear_blocked_keys, this));
+    m_block_rate_interval.do_call(boost::bind(&core::check_block_rate, this));
     m_miner.on_idle();
     m_mempool.on_idle();
     return true;
@@ -1781,6 +1782,53 @@ namespace cryptonote
       const el::Level level = el::Level::Warning;
       MCLOG_RED(level, "global", "Free space is below 1 GB on " << m_config_folder);
     }
+    return true;
+  }
+  //-----------------------------------------------------------------------------------------------
+  double factorial(unsigned int n)
+  {
+    if (n <= 1)
+      return 1.0;
+    double f = n;
+    while (n-- > 1)
+      f *= n;
+    return f;
+  }
+  //-----------------------------------------------------------------------------------------------
+  static double probability(unsigned int blocks, unsigned int expected)
+  {
+    // https://www.umass.edu/wsp/resources/poisson/#computing
+    return pow(expected, blocks) / (factorial(blocks) * exp(expected));
+  }
+  //-----------------------------------------------------------------------------------------------
+  bool core::check_block_rate()
+  {
+    if (m_offline || m_target_blockchain_height > get_current_blockchain_height())
+    {
+      MDEBUG("Not checking block rate, offline or syncing");
+      return true;
+    }
+
+    static constexpr double threshold = 1. / (864000 / DIFFICULTY_TARGET_V2); // one false positive every 10 days
+
+    const time_t now = time(NULL);
+    const std::vector<time_t> timestamps = m_blockchain_storage.get_last_block_timestamps(60);
+
+    static const unsigned int seconds[] = { 5400, 1800, 600 };
+    for (size_t n = 0; n < sizeof(seconds)/sizeof(seconds[0]); ++n)
+    {
+      unsigned int b = 0;
+      const time_t time_boundary = now - static_cast<time_t>(seconds[n]);
+      for (time_t ts: timestamps) b += ts >= time_boundary;
+      const double p = probability(b, seconds[n] / DIFFICULTY_TARGET_V2);
+      MDEBUG("blocks in the last " << seconds[n] / 60 << " minutes: " << b << " (probability " << p << ")");
+      if (p < threshold)
+      {
+        MWARNING("There were " << b << " blocks in the last " << seconds[n] / 60 << " minutes, there might be large hash rate changes, or we might be partitioned, cut off from the Monero network or under attack. Or it could be just sheer bad luck.");
+        break; // no need to look further
+      }
+    }
+
     return true;
   }
   //-----------------------------------------------------------------------------------------------
