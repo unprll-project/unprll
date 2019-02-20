@@ -5421,12 +5421,11 @@ bool simple_wallet::sweep_main(uint64_t below, bool locked, const std::vector<st
     return true;
   }
 
-  uint64_t unlock_block = 0;
+  uint64_t locked_blocks = 0;
   if (locked) {
-    uint64_t locked_blocks = 0;
 
     if (local_args.size() < 2) {
-      fail_msg_writer() << tr("missing lockedblocks parameter");
+      fail_msg_writer() << tr("missing locked_blocks parameter");
       return true;
     }
 
@@ -5439,11 +5438,16 @@ bool simple_wallet::sweep_main(uint64_t below, bool locked, const std::vector<st
       fail_msg_writer() << tr("bad locked_blocks parameter");
       return true;
     }
-    if (locked_blocks > 1000000)
+    if ((locked_blocks / config::UNLOCK_DELTA_BLOCK_SPANS_V2) > 65535) // 2**16 - 1
     {
-      fail_msg_writer() << tr("Locked blocks too high, max 1000000 (˜4 yrs)");
-      return true;
+        fail_msg_writer() << tr("Locked blocks span too high, max 1048575 (˜5 yrs)");
+        return true;
     }
+    if ((locked_blocks % config::UNLOCK_DELTA_BLOCK_SPANS_V2) != 0) {
+        message_writer() << tr("Locked blocks will be rounded down to ") << (locked_blocks - (locked_blocks % config::UNLOCK_DELTA_BLOCK_SPANS_V2));
+        message_writer() << tr("Unlock time may be off by 30 minutes at most");
+    }
+    locked_blocks /= 4;
     std::string err;
     uint64_t bc_height = get_daemon_blockchain_height(err);
     if (!err.empty())
@@ -5451,7 +5455,6 @@ bool simple_wallet::sweep_main(uint64_t below, bool locked, const std::vector<st
       fail_msg_writer() << tr("failed to get blockchain height: ") << err;
       return true;
     }
-    unlock_block = bc_height + locked_blocks;
 
     local_args.erase(local_args.begin() + 1);
   }
@@ -5561,7 +5564,7 @@ bool simple_wallet::sweep_main(uint64_t below, bool locked, const std::vector<st
   try
   {
     // figure out what tx will be necessary
-    auto ptx_vector = m_wallet->create_transactions_all(below, info.address, info.is_subaddress, outputs, fake_outs_count, unlock_block /* unlock_delta */, priority, extra, m_current_subaddress_account, subaddr_indices);
+    auto ptx_vector = m_wallet->create_transactions_all(below, info.address, info.is_subaddress, outputs, fake_outs_count, locked_blocks /* unlock_delta */, priority, extra, m_current_subaddress_account, subaddr_indices);
 
     if (ptx_vector.empty())
     {
