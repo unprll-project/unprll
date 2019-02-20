@@ -261,7 +261,7 @@ bool Blockchain::scan_outputkeys_for_indexes(size_t tx_version, const txin_to_ke
           output_index = m_db->get_output_key(tx_in_to_key.amount, i);
 
         // call to the passed boost visitor to grab the public key for the output
-        uint64_t multiplier = (m_hardfork->get(output_index.height) >= HF_VERSION_BLOCK_TIME_REDUCTION) ? 16 : 4;
+        uint64_t multiplier = (m_hardfork->get(output_index.height) >= HF_VERSION_SMALLER_BP) ? 16 : 1; // Unfortunate slip-up when implementing unlock_delta
         if (!vis.handle_output(output_index.height + (multiplier * output_index.unlock_delta), output_index.pubkey, output_index.commitment))
         {
           MERROR_VER("Failed to handle_output for output no = " << count << ", with absolute offset " << i);
@@ -2084,7 +2084,7 @@ bool Blockchain::get_outs(const COMMAND_RPC_GET_OUTPUTS_BIN::request& req, COMMA
       return false;
     }
     for (const auto &t: data)
-      res.outs.push_back({t.pubkey, t.commitment, is_tx_spendtime_unlocked(t.height + (((m_hardfork->get(t.height) >= HF_VERSION_BLOCK_TIME_REDUCTION) ? 16 : 4) * t.unlock_delta)), t.height, crypto::null_hash});
+      res.outs.push_back({t.pubkey, t.commitment, is_tx_spendtime_unlocked(t.height + (((m_hardfork->get(t.height) >= HF_VERSION_SMALLER_BP) ? 16 : 1) * t.unlock_delta)), t.height, crypto::null_hash});
 
     if (req.get_txid)
     {

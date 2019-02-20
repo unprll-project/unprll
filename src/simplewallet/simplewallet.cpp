@@ -8078,9 +8078,9 @@ bool simple_wallet::show_transfer(const std::vector<std::string> &args)
       success_msg_writer() << "Timestamp: " << get_human_readable_timestamp(pd.m_timestamp);
       success_msg_writer() << "Amount: " << print_money(pd.m_amount);
       success_msg_writer() << "Payment ID: " << payment_id;
-      uint64_t const unlock_delta_span = (pd.m_block_height >= HF_VERSION_BLOCK_TIME_REDUCTION) ? config::UNLOCK_DELTA_BLOCK_SPANS_V2 : config::UNLOCK_DELTA_BLOCK_SPANS_V1;
-      uint64_t const tx_spendable_age = (pd.m_block_height >= HF_VERSION_BLOCK_TIME_REDUCTION) ? CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V2 : CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V1;
-      uint64_t bh = pd.m_block_height + std::max((uint16_t)(pd.m_unlock_delta * unlock_delta_span), (uint16_t)tx_spendable_age);
+      uint64_t const unlock_delta_span = config::UNLOCK_DELTA_BLOCK_SPANS_V2;
+      uint64_t const tx_spendable_age = CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V2;
+      uint64_t bh = pd.m_block_height + std::max((uint64_t)(pd.m_unlock_delta)  * unlock_delta_span, (uint64_t)tx_spendable_age);
       uint64_t last_block_reward = m_wallet->get_last_block_reward();
       uint64_t suggested_threshold = last_block_reward ? (pd.m_amount + last_block_reward - 1) / last_block_reward : 0;
       if (bh >= last_block_height)

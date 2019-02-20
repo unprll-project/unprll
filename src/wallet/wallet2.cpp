@@ -5147,7 +5147,7 @@ bool wallet2::is_transfer_unlocked(uint16_t unlock_delta, uint64_t block_height)
   if(!is_tx_spendtime_unlocked(unlock_delta, block_height))
     return false;
 
-  uint64_t const spendable_age = (block_height >= HF_VERSION_BLOCK_TIME_REDUCTION) ? CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V2 : CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V1;
+  uint64_t const spendable_age = CRYPTONOTE_DEFAULT_TX_SPENDABLE_AGE_V2;
   if(block_height + spendable_age > get_blockchain_current_height())
     return false;
 
@@ -5157,7 +5157,7 @@ bool wallet2::is_transfer_unlocked(uint16_t unlock_delta, uint64_t block_height)
 bool wallet2::is_tx_spendtime_unlocked(uint16_t unlock_delta, uint64_t block_height) const
 {
   //interpret as block index
-  if(get_blockchain_current_height()-1 + CRYPTONOTE_LOCKED_TX_ALLOWED_DELTA_BLOCKS >= block_height + (4 * (uint64_t)unlock_delta))
+  if(get_blockchain_current_height()-1 + CRYPTONOTE_LOCKED_TX_ALLOWED_DELTA_BLOCKS >= block_height + (config::UNLOCK_DELTA_BLOCK_SPANS_V2 * (uint64_t)unlock_delta))
     return true;
   return false;
 }
