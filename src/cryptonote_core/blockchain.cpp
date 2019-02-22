@@ -111,8 +111,8 @@ static const struct {
 } testnet_hard_forks[] = {
     // version 1 for genesis
     { 1, 0, 0, 0 },
-    // version 11 from the start of the chain
-    { 11, 1, 0, 10 },
+    // version 12 from the start of the chain
+    { 12, 1, 0, 10 },
 };
 static const uint64_t testnet_hard_fork_version_1_till = 1;
 
@@ -125,8 +125,8 @@ static const struct {
   // version 1 for genesis
   { 1, 0, 0, 0 },
 
-  // version 10 from the start of the chain
-  { 11, 1, 0, 1 },
+  // version 12 from the start of the chain
+  { 12, 1, 0, 1 },
 };
 
 //------------------------------------------------------------------
