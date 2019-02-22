@@ -4909,7 +4909,7 @@ bool simple_wallet::transfer_main(int transfer_type, const std::vector<std::stri
   // prompt is there is no payment id and confirmation is required
   if (!payment_id_seen && m_wallet->confirm_missing_payment_id() && dsts.size() > num_subaddresses)
   {
-     std::string accepted = input_line(tr("No explicitly mentioned payment id is included with this transaction. Is this okay?", true));
+     std::string accepted = input_line(tr("No explicitly mentioned payment id is included with this transaction. Is this okay?"), true);
      if (std::cin.eof())
        return true;
      if (!command_line::is_yes(accepted))
