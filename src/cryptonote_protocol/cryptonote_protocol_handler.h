@@ -151,6 +151,7 @@ namespace cryptonote
 		bool reset_invalid_blocks_map();
 		bool check_request_rate(cryptonote_connection_context &context);
 		bool check_standby_peers();
+		bool update_sync_search();
     int try_add_next_blocks(cryptonote_connection_context &context);
     void notify_new_stripe(cryptonote_connection_context &context, uint32_t stripe);
     void skip_unneeded_hashes(cryptonote_connection_context& context, bool check_block_queue) const;
@@ -169,6 +170,7 @@ namespace cryptonote
     epee::math_helper::once_a_time_seconds<600> m_dandelion_stem_selector;
 		epee::math_helper::once_a_time_seconds<24 * 60 * 60> m_invalid_blocks_resetter;
 		epee::math_helper::once_a_time_milliseconds<100> m_standby_checker;
+		epee::math_helper::once_a_time_seconds<101> m_sync_search_checker;
 		std::atomic<unsigned int> m_max_out_peers;
     boost::uuids::uuid m_dandelion_peer;
 		uint16_t m_rate_limit;
