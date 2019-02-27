@@ -1564,6 +1564,7 @@ skip:
   template<class t_core>
   bool t_cryptonote_protocol_handler<t_core>::check_request_rate(cryptonote_connection_context &context)
   {
+    CRITICAL_REGION_LOCAL(m_rate_counter_mutex);
     auto it = m_rate_counter.find(context.m_remote_address.host_str());
     if (it == m_rate_counter.end()) {
       // New host
@@ -1585,6 +1586,7 @@ skip:
   template<class t_core>
   bool t_cryptonote_protocol_handler<t_core>::reset_rate_map()
   {
+    CRITICAL_REGION_LOCAL(m_rate_counter_mutex);
     m_rate_counter.erase(m_rate_counter.begin(), m_rate_counter.end());
     return true;
   }

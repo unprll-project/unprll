@@ -175,6 +175,7 @@ namespace cryptonote
 		std::unordered_map<std::string, uint8_t> m_rate_counter;
 		std::unordered_map<crypto::hash, uint64_t> m_invalid_blocks;
 
+		boost::mutex m_rate_counter_mutex;
 		boost::mutex m_invalid_blocks_mutex;
     boost::mutex m_buffer_mutex;
     double get_avg_block_size();
