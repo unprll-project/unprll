@@ -98,7 +98,9 @@ static const struct {
   // version 10 fixes a segfault with generating the mining blob
   { 10, 3000, 0, 1545301804 },
   // version 11 reduces blocktime from 10 minutes to 2 minutes
-  { 11, 10000, 0, 1547829355 }
+  { 11, 10000, 0, 1547829355 },
+  // version 12 introduces smaller bulletproofs
+  { 12, 40000, 0, 1551416500 }
 };
 static const uint64_t mainnet_hard_fork_version_1_till = 1;
 
@@ -123,7 +125,6 @@ static const struct {
 } stagenet_hard_forks[] = {
   // version 1 for genesis
   { 1, 0, 0, 0 },
-
   // version 12 from the start of the chain
   { 12, 1, 0, 1 },
 };
