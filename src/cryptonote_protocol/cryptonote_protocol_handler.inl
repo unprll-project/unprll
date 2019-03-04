@@ -1172,8 +1172,7 @@ namespace cryptonote
 
       {
         m_core.pause_mine();
-        bool starting = true;
-        epee::misc_utils::auto_scope_leave_caller scope_exit_handler = epee::misc_utils::create_scope_leave_handler([this, &starting]() {
+        epee::misc_utils::auto_scope_leave_caller scope_exit_handler = epee::misc_utils::create_scope_leave_handler([this]() {
           m_core.resume_mine();
         });
 
@@ -1264,11 +1263,6 @@ namespace cryptonote
           }
 
           const boost::posix_time::ptime start = boost::posix_time::microsec_clock::universal_time();
-
-          if (starting)
-          {
-            starting = false;
-          }
 
           m_core.prepare_handle_incoming_blocks(blocks);
 
