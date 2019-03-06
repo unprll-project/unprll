@@ -1279,7 +1279,7 @@ namespace nodetool
       }
       if(m_net_server.is_stop_signal_sent())
         return false;
-      size_t new_conn_count = get_outgoing_connections_count(zone.second);
+      size_t new_conn_count = get_outgoing_connections_count();
       if (new_conn_count <= conn_count)
       {
         // we did not make any connection, sleep a bit to avoid a busy loop in case we don't have

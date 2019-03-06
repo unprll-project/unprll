@@ -1475,6 +1475,7 @@ namespace tools
 
     for (auto & payment_id_str : req.payment_ids)
     {
+      bool r;
       crypto::hash payment_id;
       crypto::hash8 payment_id8;
       cryptonote::blobdata payment_id_blob;
@@ -1497,6 +1498,10 @@ namespace tools
         er.message = "Payment ID has invalid format: " + payment_id_str;
         return false;
       }
+
+      payment_id8 = *reinterpret_cast<const crypto::hash8*>(payment_id_blob.data());
+      memcpy(payment_id.data, payment_id8.data, 8);
+      memset(payment_id.data + 8, 0, 24);
 
       std::list<wallet2::payment_details> payment_list;
       m_wallet->get_payments(payment_id, payment_list, req.min_block_height);
