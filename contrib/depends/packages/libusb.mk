@@ -9,7 +9,7 @@ define $(package)_preprocess_cmds
 endef
 
 define $(package)_set_vars
-  $(package)_config_opts=--disable-shared
+  $(package)_config_opts=--disable-shared --disable-udev
   $(package)_config_opts_linux=--with-pic
 endef
 
