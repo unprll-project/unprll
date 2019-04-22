@@ -31,6 +31,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <random>
 #include <boost/filesystem.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 
@@ -1382,8 +1383,16 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
       boost::thread::attributes attrs;
       attrs.set_stack_size(THREAD_STACK_SIZE);
 
-      // Start from a random position
-      uint64_t rand_start = m_verify_entire_pow ? 0 : (crypto::rand<uint64_t>() % block.iterations);
+      // Start from a random position (or from 0 if we're verifying the entire PoW)
+      uint64_t rand_start;
+      if (m_verify_entire_pow) {
+        rand_start = 0;
+      } else {
+        std::random_device rd;
+        std::mt19937 rng(rd());
+        std::uniform_int_distribution<> dis(0, block.iterations);
+        rand_start = dis(rng);
+      }
 
       for (uint32_t i = 0; i < threads_count; i += 1) {
           m_threads.push_back(boost::thread(attrs, [this, rand_start, threads_count, current_diff, i, block, checkpoint_step, height]() {
