@@ -5131,6 +5131,14 @@ bool simple_wallet::transfer_main(int transfer_type, const std::vector<std::stri
       commit_or_save(ptx_vector, m_do_not_relay);
     }
   }
+  catch (const tools::error::tx_not_constructed &e)
+  {
+    if (m_current_subaddress_account == 0) {
+      message_writer(console_color_yellow) << "WARNING: Transaction was not constructed. There may be unsweeped outputs. Run sweep_mined";
+    } else {
+      std::rethrow_exception(std::current_exception());
+    }
+  }
   catch (const std::exception &e)
   {
     handle_transfer_exception(std::current_exception(), m_wallet->is_trusted_daemon());
@@ -5646,6 +5654,14 @@ bool simple_wallet::sweep_main(uint64_t below, bool locked, const std::vector<st
     else
     {
       commit_or_save(ptx_vector, m_do_not_relay);
+    }
+  }
+  catch (const tools::error::tx_not_constructed &e)
+  {
+    if (m_current_subaddress_account == 0) {
+      message_writer(console_color_yellow) << "WARNING: Transaction was not constructed. There may be unsweeped outputs. Run sweep_mined";
+    } else {
+      std::rethrow_exception(std::current_exception());
     }
   }
   catch (const std::exception& e)
