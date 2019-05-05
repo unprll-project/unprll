@@ -4190,7 +4190,27 @@ void simple_wallet::on_money_received(uint64_t height, const crypto::hash &txid,
 //----------------------------------------------------------------------------------------------------
 void simple_wallet::on_unconfirmed_money_received(uint64_t height, const crypto::hash &txid, const cryptonote::transaction& tx, uint64_t amount, const cryptonote::subaddress_index& subaddr_index)
 {
-  // Not implemented in CLI wallet
+  message_writer(console_color_yellow, false) << "\r" <<
+      tr("Height ") << "<UNCONFIRMED>, " <<
+      tr("txid ") << txid << ", " <<
+      print_money(amount) << ", " <<
+      tr("idx ") << subaddr_index;
+
+  std::vector<tx_extra_field> tx_extra_fields;
+  parse_tx_extra(tx.extra, tx_extra_fields); // failure ok
+  tx_extra_nonce extra_nonce;
+  if (find_tx_extra_field_by_type(tx_extra_fields, extra_nonce))
+  {
+    crypto::hash8 payment_id8 = crypto::null_hash8;
+    if (get_encrypted_payment_id_from_tx_extra_nonce(extra_nonce.nonce, payment_id8)) {
+        message_writer() <<
+          tr("NOTE: this transaction uses an encrypted payment ID: consider using subaddresses instead");
+    }
+  }
+  if (m_auto_refresh_refreshing)
+      m_cmd_binder.print_prompt();
+  else
+      m_refresh_progress_reporter.update(height, true);
 }
 //----------------------------------------------------------------------------------------------------
 void simple_wallet::on_money_spent(uint64_t height, const crypto::hash &txid, const cryptonote::transaction& in_tx, uint64_t amount, const cryptonote::transaction& spend_tx, const cryptonote::subaddress_index& subaddr_index)

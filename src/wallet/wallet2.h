@@ -1348,6 +1348,7 @@ namespace tools
     bool m_is_initialized;
     NodeRPCProxy m_node_rpc_proxy;
     std::unordered_set<crypto::hash> m_scanned_pool_txs[2];
+    std::unordered_set<crypto::hash> m_seen_unconfirmed_txs;  //TODO: Is this unnecessary duplication?
     size_t m_subaddress_lookahead_major, m_subaddress_lookahead_minor;
     std::string m_device_name;
 

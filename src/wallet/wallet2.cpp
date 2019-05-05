@@ -2514,6 +2514,10 @@ void wallet2::update_pool_state(bool refreshed)
     else
     {
       LOG_PRINT_L1("Already saw that one, it's for us");
+      if (m_scanned_pool_txs[0].find(txid) != m_scanned_pool_txs[0].end() || m_scanned_pool_txs[1].find(txid) != m_scanned_pool_txs[1].end())
+      {
+        continue;
+      }
       txids.push_back({txid, true});
     }
   }
@@ -2722,6 +2726,7 @@ void wallet2::refresh(bool trusted_daemon, uint64_t start_height, uint64_t & blo
   uint64_t blocks_start_height;
   std::vector<cryptonote::block_complete_entry> blocks;
   std::vector<parsed_block> parsed_blocks;
+  bool refreshed = false;
 
   // pull the first set of blocks
   get_short_chain_history(short_chain_history, (m_first_refresh_done || trusted_daemon) ? 1 : FIRST_REFRESH_GRANULARITY);
@@ -2769,6 +2774,7 @@ void wallet2::refresh(bool trusted_daemon, uint64_t start_height, uint64_t & blo
       added_blocks = 0;
       if (!first && blocks.empty())
       {
+        refreshed = false;
         break;
       }
       tpool.submit(&waiter, [&]{pull_and_parse_next_blocks(start_height, next_blocks_start_height, short_chain_history, blocks, parsed_blocks, next_blocks, next_parsed_blocks, error);});
@@ -2813,6 +2819,7 @@ void wallet2::refresh(bool trusted_daemon, uint64_t start_height, uint64_t & blo
       if(!first && blocks_start_height == next_blocks_start_height)
       {
         m_node_rpc_proxy.set_height(m_blockchain.size());
+        refreshed = true;
         break;
       }
 
@@ -2854,6 +2861,18 @@ void wallet2::refresh(bool trusted_daemon, uint64_t start_height, uint64_t & blo
   }
   if(last_tx_hash_id != (m_transfers.size() ? m_transfers.back().m_txid : null_hash))
     received_money = true;
+
+  try
+  {
+    // If stop() is called we don't need to check pending transactions
+    if(m_run.load(std::memory_order_relaxed))
+      update_pool_state(refreshed);
+  }
+  catch (...)
+  {
+    LOG_PRINT_L1("Failed to check pending transactions");
+  }
+
 
   m_first_refresh_done = true;
 
