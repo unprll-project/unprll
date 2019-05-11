@@ -3726,7 +3726,10 @@ leave:
         MERROR_VER("Block with id is INVALID: " << id << ", expected " << expected_hash);
         bvc.m_verifivation_failed = true;
         goto leave;
+      } else {
+        MCINFO("verify", "Block matches pre-validated hash " << expected_hash);
       }
+      proof_of_work = bl.hash_checkpoints.back();
       fast_check = true;
     }
     else
@@ -3734,8 +3737,8 @@ leave:
       MCINFO("verify", "No pre-validated hash at height " << blockchain_height << ", verifying fully");
     }
   }
-  else
 #endif
+  if (!fast_check)
   {
     auto it = m_blocks_longhash_table.find(id);
     if (it != m_blocks_longhash_table.end())
@@ -4405,12 +4408,11 @@ uint64_t Blockchain::prevalidate_block_hashes(uint64_t height, const std::vector
       bool valid = hash == m_blocks_hash_of_hashes[n];
 
       // add to the known hashes array
-      // TODO FIXME
-      // if (!valid)
-      // {
-      //   MWARNING("invalid hash for blocks " << n * HASH_OF_HASHES_STEP << " - " << (n * HASH_OF_HASHES_STEP + HASH_OF_HASHES_STEP - 1));
-      //   break;
-      // }
+      if (!valid)
+      {
+        MWARNING("invalid hash for blocks " << n * HASH_OF_HASHES_STEP << " - " << (n * HASH_OF_HASHES_STEP + HASH_OF_HASHES_STEP - 1));
+        break;
+      }
 
       size_t end = n * HASH_OF_HASHES_STEP + HASH_OF_HASHES_STEP;
       for (size_t i = n * HASH_OF_HASHES_STEP; i < end; ++i)
@@ -4950,7 +4952,7 @@ void Blockchain::cancel()
 }
 
 #if defined(PER_BLOCK_CHECKPOINT)
-static const char expected_block_hashes_hash[] = "954cb2bbfa2fe6f74b2cdd22a1a4c767aea249ad47ad4f7c9445f0f03260f511";
+static const char expected_block_hashes_hash[] = "244b0b313ba11fc8b24931a0d352e865ade7e9ee0f2029e97dc1002b68f21c9a";
 void Blockchain::load_compiled_in_block_hashes()
 {
   const bool testnet = m_nettype == TESTNET;

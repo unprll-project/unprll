@@ -46,6 +46,9 @@
 #include "syncobj.h"
 #include "string_tools.h"
 #include "cryptonote_basic/cryptonote_basic.h"
+#if defined(PER_BLOCK_CHECKPOINT)
+#include "blocks/blocks.h"
+#endif
 #include "common/util.h"
 #include "cryptonote_protocol/cryptonote_protocol_handler_common.h"
 #include "cryptonote_protocol/cryptonote_protocol_defs.h"
