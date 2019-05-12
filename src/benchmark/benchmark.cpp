@@ -27,7 +27,6 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/chrono.hpp>
-#include <boost/asio.hpp>
 #include <boost/thread.hpp>
 
 #include "crypto/hash.h"
@@ -51,16 +50,18 @@ void singlethreaded() {
 }
 
 void multithreaded() {
-  boost::asio::thread_pool thread_pool(boost::thread::hardware_concurrency());
+  std::vector<boost::thread> thread_pool;
   for (size_t i = 0; i < boost::thread::hardware_concurrency(); i += 1) {
-    boost::asio::dispatch(thread_pool, [](){
+    thread_pool.push_back(boost::thread([](){
       crypto::hash hash = crypto::null_hash;
       for (size_t i = 0; i < 10; i += 1) {
         crypto::cn_slow_hash(hash.data, sizeof(hash.data), hash);
       }
-    });
+    }));
   }
-  thread_pool.join();
+  for (auto& t : thread_pool) {
+    t.join();
+  }
 }
 
 int main(int argc, char* argv[])
