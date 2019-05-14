@@ -729,7 +729,7 @@ namespace rpc
     else
     {
       res.size_scale = 1; // per byte fee
-      res.fee_mask = Blockchain::get_fee_quantization_mask();
+      res.fee_mask = Blockchain::get_fee_quantization_mask(res.hard_fork_version);
     }
     res.status = Message::STATUS_OK;
   }

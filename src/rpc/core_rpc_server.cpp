@@ -1840,7 +1840,7 @@ namespace cryptonote
       return r;
 
     res.fee = m_core.get_blockchain_storage().get_dynamic_base_fee_estimate(req.grace_blocks);
-    res.quantization_mask = Blockchain::get_fee_quantization_mask();
+    res.quantization_mask = Blockchain::get_fee_quantization_mask(m_core.get_blockchain_storage().get_current_hard_fork_version());
     res.status = CORE_RPC_STATUS_OK;
     return true;
   }

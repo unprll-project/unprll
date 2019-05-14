@@ -113,8 +113,8 @@ static const struct {
 } testnet_hard_forks[] = {
     // version 1 for genesis
     { 1, 0, 0, 0 },
-    // version 12 from the start of the chain
-    { 12, 1, 0, 10 },
+    // version 13 from the start of the chain
+    { 13, 1, 0, 10 },
 };
 static const uint64_t testnet_hard_fork_version_1_till = 1;
 
@@ -126,7 +126,7 @@ static const struct {
 } stagenet_hard_forks[] = {
   // version 1 for genesis
   { 1, 0, 0, 0 },
-  // version 12 from the start of the chain
+  // version 13 from the start of the chain
   { 12, 1, 0, 1 },
 };
 
@@ -3288,16 +3288,22 @@ void Blockchain::check_ring_signature(const crypto::hash &tx_prefix_hash, const 
 }
 
 //------------------------------------------------------------------
-uint64_t Blockchain::get_fee_quantization_mask()
+uint64_t Blockchain::get_fee_quantization_mask(uint8_t version)
 {
-  static uint64_t mask = 0;
-  if (mask == 0)
+  static uint64_t mask_v1 = 0, mask_v2 = 0;
+  if (mask_v1 == 0)
   {
-    mask = 1;
-    for (size_t n = PER_KB_FEE_QUANTIZATION_DECIMALS; n < CRYPTONOTE_DISPLAY_DECIMAL_POINT; ++n)
-      mask *= 10;
+    mask_v1 = 1;
+    for (size_t n = PER_KB_FEE_QUANTIZATION_DECIMALS_V1; n < CRYPTONOTE_DISPLAY_DECIMAL_POINT; ++n)
+      mask_v1 *= 10;
   }
-  return mask;
+  if (mask_v2 == 0)
+  {
+    mask_v2 = 1;
+    for (size_t n = PER_KB_FEE_QUANTIZATION_DECIMALS_V2; n < CRYPTONOTE_DISPLAY_DECIMAL_POINT; ++n)
+      mask_v2 *= 10;
+  }
+  return version >= HF_VERSION_INCREASED_FEE ? mask_v2 : mask_v1;
 }
 
 //------------------------------------------------------------------
@@ -3310,7 +3316,8 @@ uint64_t Blockchain::get_dynamic_base_fee(uint64_t block_reward, size_t median_b
 
   if (version >= HF_VERSION_PER_BYTE_FEE)
   {
-    lo = mul128(block_reward, DYNAMIC_FEE_REFERENCE_TRANSACTION_WEIGHT, &hi);
+    uint64_t reference_transaction_weight = (version >= HF_VERSION_INCREASED_FEE) ? DYNAMIC_FEE_REFERENCE_TRANSACTION_WEIGHT_V2 : DYNAMIC_FEE_REFERENCE_TRANSACTION_WEIGHT_V1;
+    lo = mul128(block_reward, reference_transaction_weight, &hi);
     div128_32(hi, lo, min_block_weight, &hi, &lo);
     div128_32(hi, lo, median_block_weight, &hi, &lo);
     assert(hi == 0);
@@ -3331,7 +3338,7 @@ uint64_t Blockchain::get_dynamic_base_fee(uint64_t block_reward, size_t median_b
   assert(hi == 0);
 
   // quantize fee up to 8 decimals
-  uint64_t mask = get_fee_quantization_mask();
+  uint64_t mask = get_fee_quantization_mask(version);
   uint64_t qlo = (lo + mask - 1) / mask * mask;
   MDEBUG("lo " << print_money(lo) << ", qlo " << print_money(qlo) << ", mask " << mask);
 
@@ -3363,7 +3370,7 @@ bool Blockchain::check_fee(size_t tx_weight, uint64_t fee) const
     MDEBUG("Using " << print_money(fee_per_byte) << "/byte fee");
     needed_fee = tx_weight * fee_per_byte;
     // quantize fee up to 8 decimals
-    const uint64_t mask = get_fee_quantization_mask();
+    const uint64_t mask = get_fee_quantization_mask(version);
     needed_fee = (needed_fee + mask - 1) / mask * mask;
   }
   else

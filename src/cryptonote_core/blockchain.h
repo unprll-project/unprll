@@ -557,7 +557,7 @@ namespace cryptonote
      *
      * @return the fee quantized mask
      */
-    static uint64_t get_fee_quantization_mask();
+    static uint64_t get_fee_quantization_mask(uint8_t version);
 
     /**
      * @brief get dynamic per kB or byte fee for a given block weight

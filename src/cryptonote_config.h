@@ -71,7 +71,8 @@
 #define FEE_PER_BYTE                                    ((uint64_t)300000)
 #define DYNAMIC_FEE_PER_KB_BASE_FEE                     ((uint64_t)2000000000) // 2 * pow(10,9)
 #define DYNAMIC_FEE_PER_KB_BASE_BLOCK_REWARD            ((uint64_t)10000000000000) // 10 * pow(10,12)
-#define DYNAMIC_FEE_REFERENCE_TRANSACTION_WEIGHT        ((uint64_t)3000)
+#define DYNAMIC_FEE_REFERENCE_TRANSACTION_WEIGHT_V1     ((uint64_t)3000)
+#define DYNAMIC_FEE_REFERENCE_TRANSACTION_WEIGHT_V2     ((uint64_t)300000)
 
 #define ORPHANED_BLOCKS_MAX_COUNT                       100
 
@@ -134,8 +135,10 @@
 #define HF_VERSION_BLOCK_TIME_REDUCTION         11
 #define HF_VERSION_SMALLER_BP                   12
 #define HF_VERSION_LONG_TERM_BLOCK_WEIGHT       12
+#define HF_VERSION_INCREASED_FEE                13
 
-#define PER_KB_FEE_QUANTIZATION_DECIMALS        8
+#define PER_KB_FEE_QUANTIZATION_DECIMALS_V1     8
+#define PER_KB_FEE_QUANTIZATION_DECIMALS_V2     3
 
 #define HASH_OF_HASHES_STEP                     256
 
