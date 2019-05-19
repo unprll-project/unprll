@@ -532,6 +532,10 @@ bool Blockchain::deinit()
   m_async_pool.join_all();
   m_async_service.stop();
 
+  for (auto& thread : m_threads) {
+    thread.interrupt();
+  }
+
   // as this should be called if handling a SIGSEGV, need to check
   // if m_db is a NULL pointer (and thus may have caused the illegal
   // memory operation), otherwise we may cause a loop.
