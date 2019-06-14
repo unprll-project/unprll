@@ -133,8 +133,14 @@ int main(int argc, char* argv[])
 
   if (command_line::has_arg(vm, arg_output_file))
     output_file_path = boost::filesystem::path(command_line::get_arg(vm, arg_output_file));
-  else
-    output_file_path = boost::filesystem::path(m_config_folder) / "export" / BLOCKCHAIN_RAW;
+  else {
+    output_file_path = boost::filesystem::path(m_config_folder) / "export";
+    if (opt_blocks_dat) {
+      output_file_path /= "blocks.dat";
+    } else {
+      output_file_path /= BLOCKCHAIN_RAW;
+    }
+  }
   LOG_PRINT_L0("Export output file: " << output_file_path.string());
 
   // If we wanted to use the memory pool, we would set up a fake_core.
