@@ -127,7 +127,7 @@ static const struct {
   // version 1 for genesis
   { 1, 0, 0, 0 },
   // version 13 from the start of the chain
-  { 12, 1, 0, 1 },
+  { 13, 1, 0, 1 },
 };
 
 //------------------------------------------------------------------
@@ -414,8 +414,10 @@ bool Blockchain::init(BlockchainDB* db, i_cryptonote_protocol* pprotocol, bool v
   m_async_pool.create_thread(boost::bind(&boost::asio::io_service::run, &m_async_service));
 
 #if defined(PER_BLOCK_CHECKPOINT)
-  if (m_nettype != FAKECHAIN)
+  if (m_nettype != FAKECHAIN) {
     load_compiled_in_block_hashes();
+    load_block_hashes_from_file();
+  }
 #endif
 
   m_pprotocol = pprotocol;
@@ -4949,52 +4951,113 @@ void Blockchain::load_compiled_in_block_hashes()
 
     if (get_blocks_dat_size(testnet, stagenet) > 4)
     {
-      const unsigned char *p = get_blocks_dat_start(testnet, stagenet);
-      const uint32_t nblocks = *p | ((*(p+1))<<8) | ((*(p+2))<<16) | ((*(p+3))<<24);
-      if (nblocks > (std::numeric_limits<uint32_t>::max() - 4) / sizeof(hash))
-      {
-        MERROR("Block hash data is too large");
-        return;
-      }
-      const size_t size_needed = 4 + nblocks * sizeof(crypto::hash);
-      if(nblocks > 0 && nblocks > (m_db->height() + HASH_OF_HASHES_STEP - 1) / HASH_OF_HASHES_STEP && get_blocks_dat_size(testnet, stagenet) >= size_needed)
-      {
-        p += sizeof(uint32_t);
-        m_blocks_hash_of_hashes.reserve(nblocks);
-        for (uint32_t i = 0; i < nblocks; i++)
-        {
-          crypto::hash hash;
-          memcpy(hash.data, p, sizeof(hash.data));
-          p += sizeof(hash.data);
-          m_blocks_hash_of_hashes.push_back(hash);
-        }
-        m_blocks_hash_check.resize(m_blocks_hash_of_hashes.size() * HASH_OF_HASHES_STEP, crypto::null_hash);
-        MINFO(nblocks << " block hashes loaded");
-
-        // FIXME: clear tx_pool because the process might have been
-        // terminated and caused it to store txs kept by blocks.
-        // The core will not call check_tx_inputs(..) for these
-        // transactions in this case. Consequently, the sanity check
-        // for tx hashes will fail in handle_block_to_main_chain(..)
-        CRITICAL_REGION_LOCAL(m_tx_pool);
-
-        std::vector<transaction> txs;
-        m_tx_pool.get_transactions(txs);
-
-        size_t tx_weight;
-        uint64_t fee;
-        bool relayed, do_not_relay, double_spend_seen, dandelion_stem;
-        transaction pool_tx;
-        blobdata txblob;
-        for(const transaction &tx : txs)
-        {
-          crypto::hash tx_hash = get_transaction_hash(tx);
-          m_tx_pool.take_tx(tx_hash, pool_tx, txblob, tx_weight, fee, relayed, do_not_relay, double_spend_seen, dandelion_stem);
-        }
-      }
+      load_block_hashes(get_blocks_dat_start(testnet, stagenet), get_blocks_dat_size(testnet, stagenet));
     }
   }
 }
+
+void Blockchain::load_block_hashes_from_file()
+{
+  const bool testnet = m_nettype == TESTNET;
+  const bool stagenet = m_nettype == STAGENET;
+
+  if (m_fast_sync)
+  {
+    // TODO FIXME: Figure out how to load non-default paths
+    boost::filesystem::path block_hash_file_path = boost::filesystem::path(tools::get_default_data_dir()) / "export" / "blocks.dat";
+    MINFO("Loading block hashes from " << block_hash_file_path.string());
+
+    boost::system::error_code ec;
+    if (!boost::filesystem::exists(block_hash_file_path, ec))
+    {
+      MWARNING("No block hash file found");
+      return;
+    }
+
+    std::ifstream file;
+    file.open(block_hash_file_path.string(), std::ios_base::binary | std::ifstream::in);
+
+    if (file.fail())
+    {
+      MWARNING("Failed to open block hash file");
+      return;
+    }
+
+    std::streampos block_hash_file_size = file.tellg();
+    file.seekg(0, std::ios_base::end);
+    block_hash_file_size = file.tellg() - block_hash_file_size;
+    file.seekg(0, std::ios_base::beg);
+
+    if (block_hash_file_size > 4)
+    {
+      unsigned char *block_hash_data = new unsigned char[block_hash_file_size];
+
+      file.read(reinterpret_cast<char *>(block_hash_data), block_hash_file_size);
+      load_block_hashes(block_hash_data, block_hash_file_size);
+
+      delete block_hash_data;
+    }
+
+    file.close();
+  }
+}
+
+void Blockchain::load_block_hashes(const unsigned char* block_hash_start, uint32_t block_hash_size) {
+  const unsigned char *p = block_hash_start;
+  const uint32_t nblocks = *p | ((*(p+1))<<8) | ((*(p+2))<<16) | ((*(p+3))<<24);
+  if (nblocks > (std::numeric_limits<uint32_t>::max() - 4) / sizeof(hash))
+  {
+    MERROR("Block hash data is too large");
+    return;
+  }
+  const size_t size_needed = 4 + nblocks * sizeof(crypto::hash);
+  if(nblocks > 0 && nblocks > (m_db->height() + HASH_OF_HASHES_STEP - 1) / HASH_OF_HASHES_STEP && block_hash_size >= size_needed)
+  {
+    p += sizeof(uint32_t);
+    m_blocks_hash_of_hashes.reserve(nblocks);
+    std::vector<crypto::hash> block_hoh;
+    for (uint32_t i = 0; i < nblocks; i++)
+    {
+      crypto::hash hash;
+      memcpy(hash.data, p, sizeof(hash.data));
+      p += sizeof(hash.data);
+      block_hoh.push_back(hash);
+    }
+    if (!m_blocks_hash_of_hashes.empty()) {
+      for (size_t i = 0; i < std::min(m_blocks_hash_of_hashes.size(), block_hoh.size()); i += 1) {
+        if (m_blocks_hash_of_hashes[i] != block_hoh[i]) {
+          MWARNING("Preloaded hashes don't match with hashes from blocks.dat");
+          break;
+        }
+      }
+    }
+    m_blocks_hash_of_hashes.swap(block_hoh);
+    m_blocks_hash_check.resize(m_blocks_hash_of_hashes.size() * HASH_OF_HASHES_STEP, crypto::null_hash);
+    MINFO(nblocks << " block hashes loaded");
+
+    // FIXME: clear tx_pool because the process might have been
+    // terminated and caused it to store txs kept by blocks.
+    // The core will not call check_tx_inputs(..) for these
+    // transactions in this case. Consequently, the sanity check
+    // for tx hashes will fail in handle_block_to_main_chain(..)
+    CRITICAL_REGION_LOCAL(m_tx_pool);
+
+    std::vector<transaction> txs;
+    m_tx_pool.get_transactions(txs);
+
+    size_t tx_weight;
+    uint64_t fee;
+    bool relayed, do_not_relay, double_spend_seen, dandelion_stem;
+    transaction pool_tx;
+    blobdata txblob;
+    for(const transaction &tx : txs)
+    {
+      crypto::hash tx_hash = get_transaction_hash(tx);
+      m_tx_pool.take_tx(tx_hash, pool_tx, txblob, tx_weight, fee, relayed, do_not_relay, double_spend_seen, dandelion_stem);
+    }
+  }
+}
+
 #endif
 
 bool Blockchain::is_within_compiled_block_hash_area(uint64_t height) const

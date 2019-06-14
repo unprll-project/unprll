@@ -1419,10 +1419,28 @@ namespace cryptonote
      * @brief loads block hashes from compiled-in data set
      *
      * A (possibly empty) set of block hashes can be compiled into the
-     * unprll daemon binary.  This function loads those hashes into
-     * a useful state.
+     * unprll daemon binary. This function loads those hashes into memory for
+     * loading by load_block_hashes()
      */
     void load_compiled_in_block_hashes();
+
+    /**
+     * @brief loads block hashes from a file
+     *
+     * A (possibly empty) set of block hashes can be stored on disk.
+     * This function loads those hashes into memory for loading by
+     * load_block_hashes()
+     */
+    void load_block_hashes_from_file();
+
+    /**
+     * @brief loads block hashes from the given location in memory (compiled into
+     * the binary or loaded from file)
+     *
+     * @param block_hash_start the first element of the block hash array
+     * @param block_hash_size the size of the block hash array
+     */
+     void load_block_hashes(const unsigned char* block_hash_start, uint32_t block_hash_size);
 
     /**
      * @brief expands v2 transaction data from blockchain
