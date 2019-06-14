@@ -1548,6 +1548,13 @@ skip:
         auto it = alive_peers.begin();
         std::advance(it, dis(rng));
 
+        if (m_dandelion_peer == boost::uuids::nil_uuid()) {
+          MGINFO_GREEN(ENDL << "**********************************************************************" << ENDL
+            << ENDL << "Dandelion Peer selected. You may now make transactions" << ENDL
+            << ENDL << "**********************************************************************" << ENDL
+          );
+        }
+
         m_dandelion_peer = *it;
     } else {
         m_dandelion_peer = boost::uuids::nil_uuid();

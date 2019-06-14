@@ -1620,7 +1620,8 @@ namespace cryptonote
         << ENDL
         << "Use the \"help\" command to see the list of available commands." << ENDL
         << "Use \"help <command>\" to see a command's documentation." << ENDL
-        << "**********************************************************************" << ENDL);
+        << ENDL << "NOTE: It is not recommended to make transactions until the daemon has chosen a dandelion peer." << ENDL
+        << ENDL << "**********************************************************************" << ENDL);
       m_starter_message_showed = true;
     }
 
