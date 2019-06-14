@@ -1533,7 +1533,7 @@ skip:
     std::vector<boost::uuids::uuid> alive_peers;
     m_p2p->for_each_connection([&](cryptonote_connection_context& context, nodetool::peerid_type peer_id, uint32_t support_flags)->bool
     {
-      if (context.m_state == cryptonote_connection_context::state_normal)
+      if (context.m_state == cryptonote_connection_context::state_normal || context.m_state == cryptonote_connection_context::state_synchronizing)
       {
           alive_peers.push_back(context.m_connection_id);
       }
