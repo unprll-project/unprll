@@ -167,7 +167,7 @@ namespace cryptonote
     block_queue m_block_queue;
     epee::math_helper::once_a_time_seconds<30> m_idle_peer_kicker;
 		epee::math_helper::once_a_time_seconds<60> m_rate_resetter;
-    epee::math_helper::once_a_time_seconds<600> m_dandelion_stem_selector;
+    epee::math_helper::once_a_time_seconds<120> m_dandelion_stem_selector;
 		epee::math_helper::once_a_time_seconds<24 * 60 * 60> m_invalid_blocks_resetter;
 		epee::math_helper::once_a_time_milliseconds<100> m_standby_checker;
 		epee::math_helper::once_a_time_seconds<101> m_sync_search_checker;
