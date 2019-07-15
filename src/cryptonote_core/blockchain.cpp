@@ -1324,49 +1324,116 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
   blobdata bd = get_block_mining_blob(block);
   cn_slow_hash(bd.data(), bd.size(), proof_of_work);
 
-  // 3. The first hash checkpoint must be valid
+  // 2. The first hash checkpoint must be valid
   if (proof_of_work != block.hash_checkpoints[0]) {
       MERROR_VER("First hash mismatch. Expected: " << block.hash_checkpoints[0] << ", got: " << proof_of_work);
       add_block_as_invalid(block, get_block_hash(block));
       return false;
   }
 
-  // If our thread list is full, wait for any existing verifications to occur
-  if (m_threads.size() >= tools::get_max_concurrency()) {
-    for (auto &t : m_threads) {
+  // Wait for any existing verifications to occur
+  for (auto &t : m_threads) {
       t.join();
-    }
-    // Remove existing threads
-    m_threads.clear();
+  }
+  // Remove existing threads
+  m_threads.clear();
+
+  // If we're not at a checkpoint and we're within checkpoints, we can skip
+  // the costly verification
+  bool is_a_checkpoint;
+  // Assuming the code got through to here, checkpoints have passed correctly
+  m_checkpoints.check_block(height, get_block_hash(block), is_a_checkpoint);
+  if (!m_verify_entire_pow && !is_a_checkpoint && m_checkpoints.is_in_checkpoint_zone(height)) {
+      return true;
   }
 
   // TODO FIXME Move all slow_hash_free_state calls into one place
-  uint64_t threads_count = tools::get_max_concurrency();
-  boost::thread::attributes attrs;
-  attrs.set_stack_size(THREAD_STACK_SIZE);
+  if (block.iterations < checkpoint_step) {
+      uint32_t iterations = block.iterations;
+      std::vector<crypto::hash> hash_checkpoints = block.hash_checkpoints;
 
-  // Start from a random position (or from 0 if we're verifying the entire PoW)
-  uint64_t rand_start;
-  if (m_verify_entire_pow) {
-    rand_start = 0;
+      block.hash_checkpoints.clear();
+      block.iterations = 0;
+
+      // Single threaded should work fine here
+      for (uint32_t i = 1; i <= iterations; i += 1) {
+          // If there's an earlier hash that is valid, invalidate block
+          if (check_hash(proof_of_work, current_diff)) {
+              slow_hash_free_state();
+              add_block_as_invalid(block, get_block_hash(block));
+              return false;
+          }
+
+          // If the current iteration is listed in checkpoints, check if the hash matches
+          if (i % checkpoint_step == 0 && hash_checkpoints[(i / checkpoint_step)] != proof_of_work) {
+              slow_hash_free_state();
+              add_block_as_invalid(block, get_block_hash(block));
+              return false;
+          }
+
+          // Perform next hash
+          cn_slow_hash(proof_of_work.data, sizeof(proof_of_work.data), proof_of_work);
+
+          block.iterations += 1;
+
+          if (i % checkpoint_step == 0) {
+              block.hash_checkpoints.push_back(proof_of_work);
+          }
+      }
+
+      return true;
   } else {
-    std::random_device rd;
-    std::mt19937 rng(rd());
-    std::uniform_int_distribution<> dis(0, block.hash_checkpoints.size());
-    rand_start = dis(rng);
-  }
+      // Multithread verification for (usually) faster performance
 
-  for (uint32_t i = 0; i < std::min(threads_count, ((block.iterations - (rand_start * checkpoint_step)) / checkpoint_step)); i += 1) {
-      m_threads.push_front(boost::thread(attrs, [this, rand_start, threads_count, current_diff, i, block, checkpoint_step, height]() {
-          uint64_t pos = rand_start + i;
-          uint64_t checkpoints_verified = i;
-          while (pos < block.hash_checkpoints.size() && block.iterations > pos * checkpoint_step) {
-              crypto::hash h = block.hash_checkpoints[pos];
+      uint8_t threads_count = tools::get_max_concurrency();
+      boost::thread::attributes attrs;
+      attrs.set_stack_size(THREAD_STACK_SIZE);
 
-              for (uint64_t j = 0; j < std::min((block.iterations - (pos * checkpoint_step)), checkpoint_step); j += 1) {
-                  // If there's an earlier hash that is valid, invalidate block
-                  if (check_hash(h, current_diff)) {
-                      MERROR_VER("[" << i << "] Premature valid hash");
+      // Start from a random position (or from 0 if we're verifying the entire PoW)
+      uint64_t rand_start;
+      if (m_verify_entire_pow) {
+        rand_start = 0;
+      } else {
+        std::random_device rd;
+        std::mt19937 rng(rd());
+        std::uniform_int_distribution<> dis(0, block.iterations);
+        rand_start = dis(rng);
+      }
+
+      for (uint32_t i = 0; i < threads_count; i += 1) {
+          m_threads.push_back(boost::thread(attrs, [this, rand_start, threads_count, current_diff, i, block, checkpoint_step, height]() {
+              uint64_t pos = rand_start + i;
+              uint64_t checkpoints_verified = i;
+              while (pos < block.hash_checkpoints.size() && block.iterations > pos * checkpoint_step) {
+                  crypto::hash h = block.hash_checkpoints[pos];
+
+                  for (uint64_t j = 0; j < std::min((block.iterations - (pos * checkpoint_step)), checkpoint_step); j += 1) {
+                      // If there's an earlier hash that is valid, invalidate block
+                      if (check_hash(h, current_diff)) {
+                          MERROR_VER("[" << i << "] Premature valid hash");
+                          if (m_db->block_exists(get_block_hash(block))) {
+                              // It's in the main chain
+                              MERROR_VER("[" << i << "] Main chain block");
+                              std::list<cryptonote::block> empty;
+                              rollback_blockchain_switching(empty, height);
+                          } else if (m_alternative_chains.find(get_block_hash(block)) != m_alternative_chains.end()) {
+                              CRITICAL_REGION_LOCAL(m_blockchain_lock);
+                              MERROR_VER("[" << i << "] Alt chain block");
+                              // It's part of an alt chain
+                              m_alternative_chains.erase(get_block_hash(block));
+                          }
+                          add_block_as_invalid(block, get_block_hash(block));
+                          notify_invalid_block(get_block_hash(block), pos);
+                          for (auto& t : m_threads) {
+                            t.interrupt();
+                          }
+                          return;
+                      }
+                      cn_slow_hash(h.data, sizeof(h.data), h);
+                  }
+
+                  if (block.hash_checkpoints[pos + 1] != h) {
+                      MERROR_VER("[" << i << "] Mismatched hash in checkpoint");
                       if (m_db->block_exists(get_block_hash(block))) {
                           // It's in the main chain
                           MERROR_VER("[" << i << "] Main chain block");
@@ -1374,8 +1441,8 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                           rollback_blockchain_switching(empty, height);
                       } else if (m_alternative_chains.find(get_block_hash(block)) != m_alternative_chains.end()) {
                           CRITICAL_REGION_LOCAL(m_blockchain_lock);
-                          MERROR_VER("[" << i << "] Alt chain block");
                           // It's part of an alt chain
+                          MERROR_VER("[" << i << "] Alt chain block");
                           m_alternative_chains.erase(get_block_hash(block));
                       }
                       add_block_as_invalid(block, get_block_hash(block));
@@ -1385,48 +1452,26 @@ bool Blockchain::check_proof_of_work(cryptonote::block block, crypto::hash& proo
                       }
                       return;
                   }
-                  cn_slow_hash(h.data, sizeof(h.data), h);
-              }
 
-              if (block.hash_checkpoints[pos + 1] != h) {
-                  MERROR_VER("[" << i << "] Mismatched hash in checkpoint");
-                  if (m_db->block_exists(get_block_hash(block))) {
-                      // It's in the main chain
-                      MERROR_VER("[" << i << "] Main chain block");
-                      std::list<cryptonote::block> empty;
-                      rollback_blockchain_switching(empty, height);
-                  } else if (m_alternative_chains.find(get_block_hash(block)) != m_alternative_chains.end()) {
-                      CRITICAL_REGION_LOCAL(m_blockchain_lock);
-                      // It's part of an alt chain
-                      MERROR_VER("[" << i << "] Alt chain block");
-                      m_alternative_chains.erase(get_block_hash(block));
+                  pos += threads_count;
+                  checkpoints_verified += threads_count;
+
+                  // Probabilistic verification
+                  if (h == block.hash_checkpoints.back() || (!m_verify_entire_pow && double(checkpoints_verified) / block.hash_checkpoints.size() > config::BLOCK_VALID_THRESHOLD) || boost::this_thread::interruption_requested()) {
+                      break;
                   }
-                  add_block_as_invalid(block, get_block_hash(block));
-                  notify_invalid_block(get_block_hash(block), pos);
-                  for (auto& t : m_threads) {
-                    t.interrupt();
-                  }
-                  return;
               }
+              return;
+          }));
+      }
 
-              pos += threads_count;
-              checkpoints_verified += threads_count;
+      // NOTE: Verification will happen in the background, and remove
+      // the block if there was any invalid checkpoint
 
-              // Probabilistic verification
-              if (h == block.hash_checkpoints.back() || (!m_verify_entire_pow && double(checkpoints_verified) / block.hash_checkpoints.size() > config::BLOCK_VALID_THRESHOLD) || boost::this_thread::interruption_requested()) {
-                  break;
-              }
-          }
-          return;
-      }));
+      proof_of_work = block.hash_checkpoints.back();
+
+      return true;
   }
-
-  // NOTE: Verification will happen in the background, and remove
-  // the block if there was any invalid checkpoint
-
-  proof_of_work = block.hash_checkpoints.back();
-
-  return true;
 }
 //-----------------------------------------------------------------------------------------------
 void Blockchain::notify_invalid_block(const crypto::hash& h, uint64_t checkpoint) const
@@ -1859,7 +1904,7 @@ bool Blockchain::handle_alternative_block(const block& b, const crypto::hash& id
       alt_chain_it++;
     }
 
-    // We could be on an alt-chain with a checkpoint on a different main chain.
+    // FIXME: is it even possible for a checkpoint to show up not on the main chain?
     if(is_a_checkpoint)
     {
       //do reorganize!
@@ -3668,6 +3713,10 @@ leave:
 
   crypto::hash proof_of_work = null_hash;
 
+  // FIXME: While we don't check the whole proof-of-work in Unprll (until
+  // checkpoints), we do the preliminary checks to make sure the PoW is still
+  // valid. Is this warning from Monero still applicable?
+  //
   // Formerly the code below contained an if loop with the following condition
   // !m_checkpoints.is_in_checkpoint_zone(get_current_blockchain_height())
   // however, this caused the daemon to not bother checking PoW for blocks
