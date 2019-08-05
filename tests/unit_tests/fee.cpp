@@ -42,7 +42,7 @@ namespace
     if (mask == 0)
     {
       mask = 1;
-      for (size_t n = PER_KB_FEE_QUANTIZATION_DECIMALS; n < CRYPTONOTE_DISPLAY_DECIMAL_POINT; ++n)
+      for (size_t n = PER_KB_FEE_QUANTIZATION_DECIMALS_V1; n < CRYPTONOTE_DISPLAY_DECIMAL_POINT; ++n)
         mask *= 10;
     }
     return (fee + mask - 1) / mask * mask;
