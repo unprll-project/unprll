@@ -701,30 +701,29 @@ namespace tools
       return false;
     }
 
-    if (!payment_id.empty())
-    {
+    /* Just to clarify */
+    const std::string& payment_id_str = payment_id;
 
-      /* Just to clarify */
-      const std::string& payment_id_str = payment_id;
+    crypto::hash8 short_payment_id;
 
-      crypto::hash8 short_payment_id;
-
+    if (!payment_id.empty()) {
       /* Parse payment ID */
-      if (wallet2::parse_short_payment_id(payment_id_str, short_payment_id)) {
-        cryptonote::set_encrypted_payment_id_to_tx_extra_nonce(extra_nonce, short_payment_id);
-      }
-      else {
+      if (!wallet2::parse_short_payment_id(payment_id_str, short_payment_id)) {
         er.code = WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID;
         er.message = "Payment id has invalid format: \"" + payment_id_str + "\", expected 16 character string";
         return false;
       }
+    } else {
+      short_payment_id = crypto::rand<crypto::hash8>();
+    }
 
-      /* Append Payment ID data into extra */
-      if (!cryptonote::add_extra_nonce_to_tx_extra(extra, extra_nonce)) {
-        er.code = WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID;
-        er.message = "Something went wrong with payment_id. Please check its format: \"" + payment_id_str + "\", expected 64-character string";
-        return false;
-      }
+    cryptonote::set_encrypted_payment_id_to_tx_extra_nonce(extra_nonce, short_payment_id);
+
+    /* Append Payment ID data into extra */
+    if (!cryptonote::add_extra_nonce_to_tx_extra(extra, extra_nonce)) {
+      er.code = WALLET_RPC_ERROR_CODE_WRONG_PAYMENT_ID;
+      er.message = "Something went wrong with payment_id. Please check its format: \"" + payment_id_str + "\", expected 64-character string";
+      return false;
     }
     return true;
   }
