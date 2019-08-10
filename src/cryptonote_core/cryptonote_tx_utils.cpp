@@ -182,6 +182,8 @@ namespace cryptonote
         continue;
       if (change_addr && i.addr == *change_addr)
         continue;
+      if (i.is_change) // To allow multi-output transactions with encrypted payment IDs
+        continue;
       if (i.addr == addr)
         continue;
       if (count > 0)

@@ -672,6 +672,7 @@ namespace tools
       de.is_subaddress = info.is_subaddress;
       de.amount = it->amount;
       de.is_integrated = info.has_payment_id;
+      de.is_change = it->is_additional_output; // In case the user wanted multi-output transactions with encrypted payment IDs
       dsts.push_back(de);
 
       if (info.has_payment_id)

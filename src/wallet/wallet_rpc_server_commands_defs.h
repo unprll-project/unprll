@@ -406,9 +406,11 @@ namespace wallet_rpc
   {
     uint64_t amount;
     std::string address;
+    bool is_additional_output;
     BEGIN_KV_SERIALIZE_MAP()
       KV_SERIALIZE(amount)
       KV_SERIALIZE(address)
+      KV_SERIALIZE(is_additional_output)
     END_KV_SERIALIZE_MAP()
   };
 
