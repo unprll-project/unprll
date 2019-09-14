@@ -3562,7 +3562,7 @@ bool Blockchain::check_block_timestamp(const block& b, uint64_t& median_ts) cons
   uint64_t const FTL = (b.major_version > 11) ? CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V2 : CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT_V1;
   if(b.timestamp > get_adjusted_time() + FTL)
   {
-    MERROR_VER("Timestamp of block with id: " << get_block_hash(b) << ", " << b.timestamp << ", bigger than adjusted time + 2 hours");
+    MERROR_VER("Timestamp of block with id: " << get_block_hash(b) << ", " << b.timestamp << ", bigger than adjusted time + " << FTL << " seconds");
     return false;
   }
 
